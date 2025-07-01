@@ -198,8 +198,14 @@ export class YouTubeService {
           for (const item of data.items) {
             const customUrl = item.snippet.customUrl || '';
             const title = item.snippet.title || '';
+            const description = item.snippet.description || '';
             
-            // Check if the custom URL matches the handle
+            // Check if the custom URL exactly matches the handle
+            if (customUrl.toLowerCase() === `@${username.toLowerCase()}`) {
+              return item.snippet.channelId;
+            }
+            
+            // Check if the custom URL contains the handle
             if (customUrl.toLowerCase().includes(`@${username.toLowerCase()}`)) {
               return item.snippet.channelId;
             }

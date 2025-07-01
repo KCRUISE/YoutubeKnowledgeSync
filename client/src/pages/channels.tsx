@@ -54,6 +54,23 @@ export default function Channels() {
     },
   });
 
+  const refreshChannelMutation = useMutation({
+    mutationFn: async (channelId: number) => {
+      await apiRequest("PUT", `/api/channels/${channelId}/refresh`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/channels"] });
+      toast({ title: "채널 정보가 업데이트되었습니다." });
+    },
+    onError: (error) => {
+      toast({ 
+        title: "새로고침 실패", 
+        description: error instanceof Error ? error.message : "채널 정보를 새로고침하는 데 실패했습니다.",
+        variant: "destructive" 
+      });
+    },
+  });
+
   const handleDeleteChannel = (channelId: number) => {
     if (confirm("정말로 이 채널을 삭제하시겠습니까? 관련된 모든 요약도 함께 삭제됩니다.")) {
       deleteChannelMutation.mutate(channelId);
@@ -151,11 +168,20 @@ export default function Channels() {
                       <Button
                         variant="outline"
                         size="sm"
+                        onClick={() => refreshChannelMutation.mutate(channel.id)}
+                        disabled={refreshChannelMutation.isPending}
+                      >
+                        <RefreshCw className={`w-4 h-4 mr-1 ${refreshChannelMutation.isPending ? 'animate-spin' : ''}`} />
+                        채널 정보
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => fetchVideosMutation.mutate(channel.id)}
                         disabled={fetchVideosMutation.isPending}
                       >
                         <RefreshCw className={`w-4 h-4 mr-1 ${fetchVideosMutation.isPending ? 'animate-spin' : ''}`} />
-                        새로고침
+                        새 영상
                       </Button>
                       <Button
                         variant="outline"

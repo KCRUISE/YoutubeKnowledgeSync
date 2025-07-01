@@ -89,6 +89,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/channels/:id/refresh", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const channel = await storage.getChannel(id);
+      
+      if (!channel) {
+        return res.status(404).json({ message: "채널을 찾을 수 없습니다." });
+      }
+
+      // Fetch fresh channel info from YouTube
+      const channelInfo = await youtubeService.getChannelInfo(channel.channelUrl);
+      if (!channelInfo) {
+        return res.status(400).json({ message: "채널 정보를 가져올 수 없습니다." });
+      }
+
+      // Update channel with fresh data
+      const updatedChannel = await storage.updateChannel(id, {
+        name: channelInfo.name,
+        channelId: channelInfo.channelId,
+        thumbnailUrl: channelInfo.thumbnailUrl,
+      });
+
+      res.json(updatedChannel);
+    } catch (error) {
+      console.error("채널 정보 새로고침 실패:", error);
+      res.status(500).json({ message: "채널 정보를 새로고침하는 데 실패했습니다." });
+    }
+  });
+
   app.delete("/api/channels/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);

@@ -38,19 +38,32 @@ export function SummaryDetailModal({ summary, open, onOpenChange }: SummaryDetai
   const handleExport = async () => {
     try {
       const response = await fetch(`/api/export/${summary.id}`);
-      if (!response.ok) throw new Error("내보내기 실패");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "내보내기 실패");
+      }
       
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
+      
+      // 안전한 파일명 생성
+      const safeFilename = summary.title
+        .replace(/[<>:"/\\|?*\x00-\x1f]/g, '') // 특수문자 제거
+        .replace(/\s+/g, '_') // 공백을 언더스코어로 변경
+        .substring(0, 100); // 길이 제한
+      
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${summary.title}.md`;
+      a.download = `${safeFilename}.md`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
+      
+      console.log("옵시디언 마크다운 파일 다운로드 완료:", safeFilename);
     } catch (error) {
       console.error("내보내기 실패:", error);
+      alert("파일 내보내기에 실패했습니다. 다시 시도해주세요.");
     }
   };
 

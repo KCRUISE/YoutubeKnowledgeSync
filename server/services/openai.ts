@@ -96,29 +96,45 @@ ${transcript ? `스크립트: ${transcript}` : ''}
 
   async generateObsidianMarkdown(summary: VideoSummary, videoUrl: string, channelName: string, publishedDate: Date): Promise<string> {
     const formattedDate = publishedDate.toISOString().split('T')[0];
+    const currentDate = new Date().toISOString().split('T')[0];
     const tags = summary.tags.map(tag => tag.startsWith('#') ? tag : `#${tag}`).join(' ');
     
-    let markdown = `# ${summary.title}
-
-> **핵심 테마**: ${summary.coreTheme}
-
-## 📋 메타데이터
-- **채널**: ${channelName}
-- **발행일**: ${formattedDate}
-- **원본 링크**: [YouTube에서 보기](${videoUrl})
-- **태그**: ${tags}
-
+    let markdown = `---
+title: "${summary.title}"
+channel: "${channelName}"
+date: "${formattedDate}"
+created: "${currentDate}"
+tags: [${summary.tags.map(tag => `"${tag}"`).join(', ')}]
+type: "video-summary"
+url: "${videoUrl}"
 ---
 
-## 🎯 핵심 포인트
-${summary.keyPoints.map(point => `${point}`).join('\n')}
+# ${summary.title}
 
-## 💡 주요 인사이트
-${summary.insights.map(insight => `- ${insight}`).join('\n')}
+## 📺 영상 정보
 
-## 📖 상세 내용
+| 항목 | 내용 |
+|------|------|
+| **채널** | ${channelName} |
+| **게시일** | ${formattedDate} |
+| **링크** | [영상 보기](${videoUrl}) |
+| **요약 생성일** | ${currentDate} |
+
+## 🎯 핵심 테마
+
+> ${summary.coreTheme}
+
+## 💡 핵심 포인트
+
+${summary.keyPoints.map(point => `- ${point}`).join('\n')}
+
+## 📋 주요 내용
 
 ${summary.content}
+
+## 💡 주요 인사이트
+
+${summary.insights.map(insight => `- ${insight}`).join('\n')}
 `;
 
     // 섹션별 상세 내용 추가
@@ -142,13 +158,28 @@ ${summary.content}
       });
     }
 
-    markdown += `---
-## 🔗 연관 항목
-- [[${channelName}]] 채널의 다른 콘텐츠
-- ${summary.tags.filter(tag => tag.includes('#')).map(tag => `[[${tag}]]`).join(' ')}
+    markdown += `
+
+## 🏷️ 태그
+
+${summary.tags.map(tag => `#${tag.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9가-힣_]/g, '')}`).join(' ')}
 
 ---
-*📝 이 요약은 AI에 의해 자동 생성되었습니다. (생성일: ${formattedDate})*
+
+## 📌 메모
+
+*이곳에 개인적인 생각이나 추가 메모를 작성하세요.*
+
+---
+
+## 🔗 연관 항목
+
+- [[${channelName}]] 채널의 다른 콘텐츠
+- [[YouTube 요약 모음]]
+
+---
+
+**📝 자동 생성된 요약** | **🤖 AI 요약 서비스** | **📅 ${currentDate}**
 `;
 
     return markdown;

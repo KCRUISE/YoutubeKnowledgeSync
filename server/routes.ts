@@ -258,8 +258,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         video.publishedAt
       );
 
-      res.setHeader('Content-Type', 'text/markdown');
-      res.setHeader('Content-Disposition', `attachment; filename="${summary.title}.md"`);
+      // 파일명에서 특수문자 제거 및 안전한 파일명 생성
+      const safeFilename = summary.title
+        .replace(/[<>:"/\\|?*\x00-\x1f]/g, '') // 윈도우 금지 문자 제거
+        .replace(/\s+/g, '_') // 공백을 언더스코어로 변경
+        .substring(0, 100); // 파일명 길이 제한
+      
+      res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(safeFilename)}.md"`);
       res.send(markdown);
     } catch (error) {
       console.error("내보내기 실패:", error);

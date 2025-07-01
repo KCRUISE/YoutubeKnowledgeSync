@@ -1,4 +1,6 @@
 import { channels, videos, summaries, type Channel, type InsertChannel, type Video, type InsertVideo, type Summary, type InsertSummary, type ChannelWithStats, type SummaryWithDetails } from "@shared/schema";
+import { eq, desc, or, like, gte, sql } from "drizzle-orm";
+import { db } from "./db";
 
 export interface IStorage {
   // Channel operations
@@ -239,4 +241,280 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export class DatabaseStorage implements IStorage {
+  async getChannels(): Promise<Channel[]> {
+    return await db.select().from(channels).orderBy(desc(channels.createdAt));
+  }
+
+  async getChannelsWithStats(): Promise<ChannelWithStats[]> {
+    const result = await db
+      .select({
+        id: channels.id,
+        name: channels.name,
+        channelUrl: channels.channelUrl,
+        channelId: channels.channelId,
+        thumbnailUrl: channels.thumbnailUrl,
+        frequency: channels.frequency,
+        isActive: channels.isActive,
+        createdAt: channels.createdAt,
+        videoCount: sql<number>`count(distinct ${videos.id})`.as('videoCount'),
+        summaryCount: sql<number>`count(distinct ${summaries.id})`.as('summaryCount'),
+        newVideosCount: sql<number>`count(distinct case when ${videos.publishedAt} >= ${new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)} then ${videos.id} end)`.as('newVideosCount'),
+      })
+      .from(channels)
+      .leftJoin(videos, eq(channels.id, videos.channelId))
+      .leftJoin(summaries, eq(videos.id, summaries.videoId))
+      .groupBy(channels.id)
+      .orderBy(desc(channels.createdAt));
+
+    return result;
+  }
+
+  async getChannel(id: number): Promise<Channel | undefined> {
+    const [channel] = await db.select().from(channels).where(eq(channels.id, id));
+    return channel || undefined;
+  }
+
+  async getChannelByChannelId(channelId: string): Promise<Channel | undefined> {
+    const [channel] = await db.select().from(channels).where(eq(channels.channelId, channelId));
+    return channel || undefined;
+  }
+
+  async createChannel(insertChannel: InsertChannel): Promise<Channel> {
+    const [channel] = await db
+      .insert(channels)
+      .values(insertChannel)
+      .returning();
+    return channel;
+  }
+
+  async updateChannel(id: number, updates: Partial<InsertChannel>): Promise<Channel | undefined> {
+    const [channel] = await db
+      .update(channels)
+      .set(updates)
+      .where(eq(channels.id, id))
+      .returning();
+    return channel || undefined;
+  }
+
+  async deleteChannel(id: number): Promise<boolean> {
+    const result = await db.delete(channels).where(eq(channels.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async getVideosByChannel(channelId: number): Promise<Video[]> {
+    return await db
+      .select()
+      .from(videos)
+      .where(eq(videos.channelId, channelId))
+      .orderBy(desc(videos.publishedAt));
+  }
+
+  async getVideo(id: number): Promise<Video | undefined> {
+    const [video] = await db.select().from(videos).where(eq(videos.id, id));
+    return video || undefined;
+  }
+
+  async getVideoByVideoId(videoId: string): Promise<Video | undefined> {
+    const [video] = await db.select().from(videos).where(eq(videos.videoId, videoId));
+    return video || undefined;
+  }
+
+  async createVideo(insertVideo: InsertVideo): Promise<Video> {
+    const [video] = await db
+      .insert(videos)
+      .values(insertVideo)
+      .returning();
+    return video;
+  }
+
+  async getLatestVideos(limit = 10): Promise<Video[]> {
+    return await db
+      .select()
+      .from(videos)
+      .orderBy(desc(videos.publishedAt))
+      .limit(limit);
+  }
+
+  async getSummaries(): Promise<SummaryWithDetails[]> {
+    const result = await db
+      .select({
+        id: summaries.id,
+        channelId: summaries.channelId,
+        title: summaries.title,
+        content: summaries.content,
+        keyPoints: summaries.keyPoints,
+        tags: summaries.tags,
+        sections: summaries.sections,
+        insights: summaries.insights,
+        coreTheme: summaries.coreTheme,
+        videoId: summaries.videoId,
+        createdAt: summaries.createdAt,
+        channelName: channels.name,
+        videoTitle: videos.title,
+        videoUrl: videos.url,
+        videoDuration: videos.duration,
+        videoViewCount: videos.viewCount,
+        videoPublishedAt: videos.publishedAt,
+      })
+      .from(summaries)
+      .innerJoin(videos, eq(summaries.videoId, videos.id))
+      .innerJoin(channels, eq(videos.channelId, channels.id))
+      .orderBy(desc(summaries.createdAt));
+
+    return result.map(row => ({
+      ...row,
+      parsedSections: row.sections ? JSON.parse(row.sections as string) : undefined
+    })) as SummaryWithDetails[];
+  }
+
+  async getSummariesByChannel(channelId: number): Promise<SummaryWithDetails[]> {
+    const result = await db
+      .select({
+        id: summaries.id,
+        channelId: summaries.channelId,
+        title: summaries.title,
+        content: summaries.content,
+        keyPoints: summaries.keyPoints,
+        tags: summaries.tags,
+        sections: summaries.sections,
+        insights: summaries.insights,
+        coreTheme: summaries.coreTheme,
+        videoId: summaries.videoId,
+        createdAt: summaries.createdAt,
+        channelName: channels.name,
+        videoTitle: videos.title,
+        videoUrl: videos.url,
+        videoDuration: videos.duration,
+        videoViewCount: videos.viewCount,
+        videoPublishedAt: videos.publishedAt,
+      })
+      .from(summaries)
+      .innerJoin(videos, eq(summaries.videoId, videos.id))
+      .innerJoin(channels, eq(videos.channelId, channels.id))
+      .where(eq(channels.id, channelId))
+      .orderBy(desc(summaries.createdAt));
+
+    return result.map(row => ({
+      ...row,
+      parsedSections: row.sections ? JSON.parse(row.sections as string) : undefined
+    })) as SummaryWithDetails[];
+  }
+
+  async getSummary(id: number): Promise<Summary | undefined> {
+    const [summary] = await db.select().from(summaries).where(eq(summaries.id, id));
+    return summary || undefined;
+  }
+
+  async createSummary(insertSummary: InsertSummary): Promise<Summary> {
+    const [summary] = await db
+      .insert(summaries)
+      .values(insertSummary)
+      .returning();
+    return summary;
+  }
+
+  async getLatestSummaries(limit = 10): Promise<SummaryWithDetails[]> {
+    const result = await db
+      .select({
+        id: summaries.id,
+        channelId: summaries.channelId,
+        title: summaries.title,
+        content: summaries.content,
+        keyPoints: summaries.keyPoints,
+        tags: summaries.tags,
+        sections: summaries.sections,
+        insights: summaries.insights,
+        coreTheme: summaries.coreTheme,
+        videoId: summaries.videoId,
+        createdAt: summaries.createdAt,
+        channelName: channels.name,
+        videoTitle: videos.title,
+        videoUrl: videos.url,
+        videoDuration: videos.duration,
+        videoViewCount: videos.viewCount,
+        videoPublishedAt: videos.publishedAt,
+      })
+      .from(summaries)
+      .innerJoin(videos, eq(summaries.videoId, videos.id))
+      .innerJoin(channels, eq(videos.channelId, channels.id))
+      .orderBy(desc(summaries.createdAt))
+      .limit(limit);
+
+    return result.map(row => ({
+      ...row,
+      parsedSections: row.sections ? JSON.parse(row.sections as string) : undefined
+    })) as SummaryWithDetails[];
+  }
+
+  async searchSummaries(query: string): Promise<SummaryWithDetails[]> {
+    const result = await db
+      .select({
+        id: summaries.id,
+        channelId: summaries.channelId,
+        title: summaries.title,
+        content: summaries.content,
+        keyPoints: summaries.keyPoints,
+        tags: summaries.tags,
+        sections: summaries.sections,
+        insights: summaries.insights,
+        coreTheme: summaries.coreTheme,
+        videoId: summaries.videoId,
+        createdAt: summaries.createdAt,
+        channelName: channels.name,
+        videoTitle: videos.title,
+        videoUrl: videos.url,
+        videoDuration: videos.duration,
+        videoViewCount: videos.viewCount,
+        videoPublishedAt: videos.publishedAt,
+      })
+      .from(summaries)
+      .innerJoin(videos, eq(summaries.videoId, videos.id))
+      .innerJoin(channels, eq(videos.channelId, channels.id))
+      .where(
+        or(
+          like(summaries.title, `%${query}%`),
+          like(summaries.content, `%${query}%`),
+          like(videos.title, `%${query}%`),
+          like(channels.name, `%${query}%`)
+        )
+      )
+      .orderBy(desc(summaries.createdAt));
+
+    return result.map(row => ({
+      ...row,
+      parsedSections: row.sections ? JSON.parse(row.sections as string) : undefined
+    })) as SummaryWithDetails[];
+  }
+
+  async getStats(): Promise<{
+    totalChannels: number;
+    totalSummaries: number;
+    newThisWeek: number;
+    apiUsage: number;
+  }> {
+    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+    const [channelCount] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(channels);
+
+    const [summaryCount] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(summaries);
+
+    const [newThisWeekCount] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(summaries)
+      .where(gte(summaries.createdAt, oneWeekAgo));
+
+    return {
+      totalChannels: channelCount.count,
+      totalSummaries: summaryCount.count,
+      newThisWeek: newThisWeekCount.count,
+      apiUsage: summaryCount.count, // Using summary count as API usage approximation
+    };
+  }
+}
+
+export const storage = new DatabaseStorage();

@@ -3,7 +3,8 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { YouTubeService } from "./services/youtube";
 import { OpenAIService } from "./services/openai";
-import { insertChannelSchema, insertVideoSchema, insertSummarySchema } from "@shared/schema";
+import { insertChannelSchema, createChannelSchema, insertVideoSchema, insertSummarySchema } from "@shared/schema";
+import { z } from "zod";
 
 const youtubeService = new YouTubeService();
 const openaiService = new OpenAIService();
@@ -33,15 +34,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/channels", async (req, res) => {
     try {
-      const validatedData = insertChannelSchema.parse(req.body);
+      // Define a simple validation schema for channel creation
+      const channelInputSchema = z.object({
+        channelUrl: z.string().url("유효한 URL을 입력해주세요."),
+        frequency: z.string().optional().default("daily"),
+        isActive: z.boolean().optional().default(true),
+      });
       
-      // Check if channel already exists
-      const existingChannel = await storage.getChannelByChannelId(validatedData.channelId);
-      if (existingChannel) {
-        return res.status(400).json({ message: "이미 등록된 채널입니다." });
-      }
-
-      // Get channel info from YouTube
+      // Validate only the basic input data (without channelId which we'll get from YouTube)
+      const validatedData = channelInputSchema.parse(req.body);
+      
+      // Get channel info from YouTube first
       let channelInfo;
       try {
         channelInfo = await youtubeService.getChannelInfo(validatedData.channelUrl);
@@ -50,6 +53,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       } catch (error) {
         return res.status(400).json({ message: error instanceof Error ? error.message : "채널 정보를 가져오는 데 실패했습니다." });
+      }
+
+      // Check if channel already exists using the resolved channelId
+      const existingChannel = await storage.getChannelByChannelId(channelInfo.channelId);
+      if (existingChannel) {
+        return res.status(400).json({ message: "이미 등록된 채널입니다." });
       }
 
       const channelData = {

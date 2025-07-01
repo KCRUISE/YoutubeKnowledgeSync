@@ -45,6 +45,13 @@ export const insertChannelSchema = createInsertSchema(channels).omit({
   createdAt: true,
 });
 
+// Schema for creating channels from frontend (without channelId, which is resolved from URL)
+export const createChannelSchema = insertChannelSchema.omit({
+  channelId: true,
+  name: true, // Name will be fetched from YouTube
+  thumbnailUrl: true, // Thumbnail will be fetched from YouTube
+});
+
 export const insertVideoSchema = createInsertSchema(videos).omit({
   id: true,
 });

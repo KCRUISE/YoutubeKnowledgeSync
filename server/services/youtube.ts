@@ -48,7 +48,7 @@ export class YouTubeService {
 
   async getChannelInfo(channelUrl: string): Promise<{ channelId: string; name: string; thumbnailUrl: string } | null> {
     try {
-      const channelId = this.extractChannelId(channelUrl);
+      const channelId = await this.extractChannelId(channelUrl);
       if (!channelId) {
         throw new Error("유효하지 않은 채널 URL입니다.");
       }
@@ -137,42 +137,94 @@ export class YouTubeService {
     return null;
   }
 
-  private extractChannelId(url: string): string | null {
-    // Handle various YouTube channel URL formats
-    const patterns = [
-      /youtube\.com\/channel\/([a-zA-Z0-9_-]+)/,
-      /youtube\.com\/c\/([a-zA-Z0-9_-]+)/,
-      /youtube\.com\/user\/([a-zA-Z0-9_-]+)/,
-      /youtube\.com\/@([a-zA-Z0-9_-]+)/,
-    ];
+  private async extractChannelId(url: string): Promise<string | null> {
+    try {
+      // Handle various YouTube channel URL formats
+      const patterns = [
+        // Direct channel ID format
+        { pattern: /youtube\.com\/channel\/([a-zA-Z0-9_-]+)/, isChannelId: true },
+        // Handle format (@username)
+        { pattern: /youtube\.com\/@([a-zA-Z0-9_.-]+)/, isChannelId: false },
+        // Legacy custom URL formats
+        { pattern: /youtube\.com\/c\/([a-zA-Z0-9_.-]+)/, isChannelId: false },
+        { pattern: /youtube\.com\/user\/([a-zA-Z0-9_.-]+)/, isChannelId: false },
+      ];
 
-    for (const pattern of patterns) {
-      const match = url.match(pattern);
-      if (match) {
-        // For @username format, we need to resolve it to channel ID
-        if (url.includes('/@')) {
-          return this.resolveUsernameToChannelId(match[1]);
+      for (const { pattern, isChannelId } of patterns) {
+        const match = url.match(pattern);
+        if (match) {
+          const identifier = match[1];
+          
+          if (isChannelId) {
+            // Direct channel ID, return as-is
+            return identifier;
+          } else {
+            // Need to resolve username/handle to channel ID
+            return await this.resolveUsernameToChannelId(identifier);
+          }
         }
-        return match[1];
       }
-    }
 
-    return null;
+      return null;
+    } catch (error) {
+      console.error("채널 ID 추출 실패:", error);
+      return null;
+    }
   }
 
   private async resolveUsernameToChannelId(username: string): Promise<string | null> {
     try {
-      const response = await fetch(
-        `${this.baseUrl}/search?part=snippet&q=${username}&type=channel&maxResults=1&key=${this.apiKey}`
+      // First try the forUsername parameter (works for legacy custom URLs)
+      let response = await fetch(
+        `${this.baseUrl}/channels?part=snippet&forUsername=${username}&key=${this.apiKey}`
       );
 
-      if (!response.ok) {
-        return null;
+      if (response.ok) {
+        const data = await response.json();
+        if (data.items && data.items.length > 0) {
+          return data.items[0].id;
+        }
       }
 
-      const data = await response.json();
-      if (data.items && data.items.length > 0) {
-        return data.items[0].snippet.channelId;
+      // Search for channels by the handle name
+      response = await fetch(
+        `${this.baseUrl}/search?part=snippet&q=@${username}&type=channel&maxResults=10&key=${this.apiKey}`
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.items && data.items.length > 0) {
+          // Try to find exact match first by looking for the handle in custom URL or title
+          for (const item of data.items) {
+            const customUrl = item.snippet.customUrl || '';
+            const title = item.snippet.title || '';
+            
+            // Check if the custom URL matches the handle
+            if (customUrl.toLowerCase().includes(`@${username.toLowerCase()}`)) {
+              return item.snippet.channelId;
+            }
+            
+            // Check if title contains the exact username
+            if (title.toLowerCase() === username.toLowerCase()) {
+              return item.snippet.channelId;
+            }
+          }
+          
+          // If no exact match, return the first result
+          return data.items[0].snippet.channelId;
+        }
+      }
+
+      // Try searching without @ prefix as fallback
+      response = await fetch(
+        `${this.baseUrl}/search?part=snippet&q=${username}&type=channel&maxResults=5&key=${this.apiKey}`
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.items && data.items.length > 0) {
+          return data.items[0].snippet.channelId;
+        }
       }
 
       return null;

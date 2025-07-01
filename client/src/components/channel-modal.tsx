@@ -126,6 +126,10 @@ export function ChannelModal({ open, onOpenChange }: ChannelModalProps) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
+                      <SelectItem value="hourly">매시간</SelectItem>
+                      <SelectItem value="every3hours">3시간마다</SelectItem>
+                      <SelectItem value="every6hours">6시간마다</SelectItem>
+                      <SelectItem value="every12hours">12시간마다</SelectItem>
                       <SelectItem value="daily">매일</SelectItem>
                       <SelectItem value="weekly">주 1회</SelectItem>
                       <SelectItem value="monthly">월 1회</SelectItem>

@@ -8,7 +8,7 @@ export const channels = pgTable("channels", {
   channelId: text("channel_id").notNull().unique(),
   channelUrl: text("channel_url").notNull(),
   thumbnailUrl: text("thumbnail_url"),
-  frequency: text("frequency").notNull().default("daily"), // daily, weekly, monthly
+  frequency: text("frequency").notNull().default("daily"), // hourly, every3hours, every6hours, every12hours, daily, weekly, monthly
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

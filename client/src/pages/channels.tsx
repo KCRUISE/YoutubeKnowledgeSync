@@ -120,6 +120,9 @@ export default function Channels() {
                       )}
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-foreground truncate">{channel.name}</h3>
+                        <p className="text-xs text-muted-foreground truncate mb-1">
+                          ID: {channel.channelId}
+                        </p>
                         <p className="text-sm text-muted-foreground">
                           {channel.videoCount}개 비디오 • {channel.summaryCount}개 요약
                         </p>
@@ -133,7 +136,11 @@ export default function Channels() {
                             {channel.isActive ? "활성" : "비활성"}
                           </Badge>
                           <Badge variant="outline">
-                            {channel.frequency === "daily" ? "매일" : 
+                            {channel.frequency === "hourly" ? "매시간" :
+                             channel.frequency === "every3hours" ? "3시간마다" :
+                             channel.frequency === "every6hours" ? "6시간마다" :
+                             channel.frequency === "every12hours" ? "12시간마다" :
+                             channel.frequency === "daily" ? "매일" : 
                              channel.frequency === "weekly" ? "주 1회" : "월 1회"}
                           </Badge>
                         </div>

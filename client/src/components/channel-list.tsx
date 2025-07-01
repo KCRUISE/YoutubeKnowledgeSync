@@ -76,6 +76,9 @@ export function ChannelList() {
                   <p className="text-sm font-medium text-foreground truncate">
                     {channel.name}
                   </p>
+                  <p className="text-xs text-muted-foreground truncate mb-1">
+                    ID: {channel.channelId}
+                  </p>
                   <p className="text-xs text-muted-foreground">
                     {channel.newVideosCount > 0 
                       ? `${channel.newVideosCount}개의 새 영상`

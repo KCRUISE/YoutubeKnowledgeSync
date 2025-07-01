@@ -82,6 +82,11 @@ Three main entities with clear relationships:
 - Environment variables managed through Replit secrets
 
 ## Changelog
+- July 1, 2025. UI improvements and frequency options expansion
+  - Enhanced channel display to show channel name prominently with smaller channel ID
+  - Added hourly frequency options (every 1, 3, 6, 12 hours) for more flexible scheduling
+  - Fixed @username format YouTube channel URL parsing issues
+  - Improved channel registration workflow with better visual hierarchy
 - July 1, 2025. Database integration completed
   - Migrated from in-memory storage to PostgreSQL database
   - Implemented DatabaseStorage class with full CRUD operations

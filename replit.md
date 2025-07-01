@@ -82,8 +82,14 @@ Three main entities with clear relationships:
 - Environment variables managed through Replit secrets
 
 ## Changelog
+- July 1, 2025. Enhanced AI summarization with lilys.ai-style structured analysis
+  - Added sectioned content analysis with timestamps
+  - Implemented core theme extraction and insights generation
+  - Enhanced Obsidian markdown export with visual organization
+  - Improved UI to display structured summaries with keywords and insights
 - June 25, 2025. Initial setup
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+Summary quality preference: lilys.ai-level professional analysis with structured sections and deep insights.

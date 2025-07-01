@@ -153,8 +153,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         channelId: video.channelId,
         title: aiSummary.title,
         content: aiSummary.content,
+        coreTheme: aiSummary.coreTheme,
         keyPoints: aiSummary.keyPoints,
+        insights: aiSummary.insights,
         tags: aiSummary.tags,
+        sections: JSON.stringify(aiSummary.sections), // Store as JSON string
       };
 
       const summary = await storage.createSummary(summaryData);
@@ -185,8 +188,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const aiSummary = {
         title: summary.title,
         content: summary.content,
+        coreTheme: summary.coreTheme || "",
         keyPoints: summary.keyPoints || [],
+        insights: summary.insights || [],
         tags: summary.tags || [],
+        sections: summary.sections ? JSON.parse(summary.sections) : [],
       };
 
       const markdown = await openaiService.generateObsidianMarkdown(
@@ -226,8 +232,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const aiSummary = {
           title: summary.title,
           content: summary.content,
+          coreTheme: summary.coreTheme || "",
           keyPoints: summary.keyPoints || [],
+          insights: summary.insights || [],
           tags: summary.tags || [],
+          sections: summary.sections ? JSON.parse(summary.sections) : [],
         };
 
         const markdown = await openaiService.generateObsidianMarkdown(

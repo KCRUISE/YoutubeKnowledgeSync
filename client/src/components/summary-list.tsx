@@ -126,9 +126,28 @@ export function SummaryList() {
                         {summary.title}
                       </h4>
                       
+                      {summary.coreTheme && (
+                        <div className="text-sm text-blue-600 dark:text-blue-400 mb-2 italic">
+                          "{summary.coreTheme}"
+                        </div>
+                      )}
+                      
                       <p className="text-sm text-muted-foreground leading-relaxed mb-3 line-clamp-2">
                         {summary.content.substring(0, 150)}...
                       </p>
+                      
+                      {summary.insights && summary.insights.length > 0 && (
+                        <div className="mb-3">
+                          <p className="text-xs font-medium text-foreground mb-1">💡 핵심 인사이트:</p>
+                          <div className="flex flex-wrap gap-1">
+                            {summary.insights.slice(0, 2).map((insight, index) => (
+                              <Badge key={index} variant="outline" className="text-xs bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+                                {insight.length > 30 ? `${insight.substring(0, 30)}...` : insight}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                       
                       <div className="flex items-center space-x-4 text-xs text-muted-foreground">
                         {summary.videoDuration && (

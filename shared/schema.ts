@@ -32,8 +32,11 @@ export const summaries = pgTable("summaries", {
   channelId: integer("channel_id").notNull().references(() => channels.id),
   title: text("title").notNull(),
   content: text("content").notNull(),
+  coreTheme: text("core_theme"),
   tags: text("tags").array(),
   keyPoints: text("key_points").array(),
+  insights: text("insights").array(),
+  sections: text("sections"), // JSON string for sections
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -72,4 +75,10 @@ export type SummaryWithDetails = Summary & {
   videoDuration: string | null;
   videoViewCount: number | null;
   videoPublishedAt: Date;
+  parsedSections?: Array<{
+    title: string;
+    timestamp?: string;
+    content: string;
+    keyWords: string[];
+  }>;
 };

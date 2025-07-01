@@ -175,6 +175,9 @@ export class MemStorage implements IStorage {
       createdAt: new Date(),
       keyPoints: insertSummary.keyPoints || null,
       tags: insertSummary.tags || null,
+      insights: insertSummary.insights || null,
+      coreTheme: insertSummary.coreTheme || null,
+      sections: insertSummary.sections || null,
     };
     this.summaries.set(id, summary);
     return summary;

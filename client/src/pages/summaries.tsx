@@ -127,17 +127,36 @@ export default function Summaries() {
                           {summary.title}
                         </h4>
                         
+                        {summary.coreTheme && (
+                          <div className="text-sm text-blue-600 dark:text-blue-400 mb-2 italic font-medium">
+                            💡 "{summary.coreTheme}"
+                          </div>
+                        )}
+                        
                         <p className="text-sm text-muted-foreground leading-relaxed mb-3 line-clamp-3">
                           {summary.content.substring(0, 200)}...
                         </p>
                         
                         {summary.keyPoints && summary.keyPoints.length > 0 && (
                           <div className="mb-3">
-                            <p className="text-xs font-medium text-foreground mb-1">핵심 포인트:</p>
+                            <p className="text-xs font-medium text-foreground mb-1">🎯 핵심 포인트:</p>
                             <div className="flex flex-wrap gap-1">
                               {summary.keyPoints.slice(0, 3).map((point, index) => (
                                 <Badge key={index} variant="outline" className="text-xs">
                                   {point.length > 20 ? `${point.substring(0, 20)}...` : point}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {summary.insights && summary.insights.length > 0 && (
+                          <div className="mb-3">
+                            <p className="text-xs font-medium text-foreground mb-1">💡 핵심 인사이트:</p>
+                            <div className="flex flex-wrap gap-1">
+                              {summary.insights.slice(0, 2).map((insight, index) => (
+                                <Badge key={index} variant="secondary" className="text-xs bg-emerald-50 dark:bg-emerald-950 border-emerald-200 dark:border-emerald-800">
+                                  {insight.length > 25 ? `${insight.substring(0, 25)}...` : insight}
                                 </Badge>
                               ))}
                             </div>

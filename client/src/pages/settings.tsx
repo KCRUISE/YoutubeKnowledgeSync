@@ -58,6 +58,48 @@ export default function SettingsPage() {
                   </div>
                 </div>
               </div>
+              <Separator className="my-4" />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="obsidian-key">Obsidian API 키</Label>
+                  <div className="flex items-center space-x-2">
+                    <Input
+                      id="obsidian-key"
+                      type="password"
+                      placeholder="설정되지 않음"
+                      readOnly
+                    />
+                    <Badge variant="outline">선택적</Badge>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="obsidian-host">Obsidian 호스트</Label>
+                  <Input
+                    id="obsidian-host"
+                    placeholder="127.0.0.1"
+                    defaultValue="127.0.0.1"
+                    readOnly
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="obsidian-port">Obsidian 포트</Label>
+                  <Input
+                    id="obsidian-port"
+                    placeholder="27124"
+                    defaultValue="27124"
+                    readOnly
+                  />
+                </div>
+              </div>
+              <div className="bg-muted/50 p-4 rounded-lg">
+                <h4 className="font-medium mb-2">Obsidian 직접 연동 설정 방법:</h4>
+                <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+                  <li>Obsidian에서 'Local REST API' 커뮤니티 플러그인을 설치하고 활성화하세요</li>
+                  <li>플러그인 설정에서 API 키를 복사하세요</li>
+                  <li>Replit Secrets에 OBSIDIAN_API_KEY로 추가하세요</li>
+                  <li>설정 완료 후 요약을 내보내면 Obsidian에 직접 저장됩니다</li>
+                </ol>
+              </div>
               <p className="text-sm text-muted-foreground">
                 API 키는 환경 변수로 관리됩니다. 변경하려면 Replit Secrets에서 수정하세요.
               </p>

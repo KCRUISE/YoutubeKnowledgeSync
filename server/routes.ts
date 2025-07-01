@@ -3,11 +3,38 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { YouTubeService } from "./services/youtube";
 import { OpenAIService } from "./services/openai";
+import { ObsidianMCPService } from "./services/obsidian-mcp";
 import { insertChannelSchema, createChannelSchema, insertVideoSchema, insertSummarySchema } from "@shared/schema";
 import { z } from "zod";
 
 const youtubeService = new YouTubeService();
 const openaiService = new OpenAIService();
+
+// Obsidian MCP 서비스 초기화
+let obsidianMCP: ObsidianMCPService | null = null;
+
+async function initializeObsidianMCP() {
+  const apiKey = process.env.OBSIDIAN_API_KEY;
+  const host = process.env.OBSIDIAN_HOST || '127.0.0.1';
+  const port = process.env.OBSIDIAN_PORT || '27124';
+
+  if (apiKey) {
+    try {
+      obsidianMCP = new ObsidianMCPService({ 
+        apiKey, 
+        host, 
+        port 
+      });
+      await obsidianMCP.connect();
+      console.log('Obsidian MCP 서비스 초기화 완료');
+    } catch (error) {
+      console.warn('Obsidian MCP 초기화 실패 (선택적 기능):', error);
+      obsidianMCP = null;
+    }
+  } else {
+    console.log('OBSIDIAN_API_KEY가 설정되지 않음 - MCP 기능 비활성화');
+  }
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Test database connectivity
@@ -19,6 +46,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.error("Database connection failed:", error);
     throw error;
   }
+
+  // Initialize Obsidian MCP service
+  await initializeObsidianMCP();
 
   // Stats endpoint
   app.get("/api/stats", async (_req, res) => {
@@ -273,7 +303,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .replace(/[<>:"/\\|?*\x00-\x1f]/g, '') // 윈도우 금지 문자 제거
         .replace(/\s+/g, '_') // 공백을 언더스코어로 변경
         .substring(0, 100); // 파일명 길이 제한
+
+      // Obsidian MCP를 통한 직접 전송 시도
+      if (obsidianMCP && obsidianMCP.isConnected()) {
+        const obsidianPath = `YouTube 요약/${channel.name}/${safeFilename}.md`;
+        const success = await obsidianMCP.putContent(obsidianPath, markdown);
+        
+        if (success) {
+          res.json({ 
+            message: "Obsidian에 성공적으로 저장되었습니다.", 
+            path: obsidianPath,
+            method: 'obsidian_direct'
+          });
+          return;
+        }
+      }
       
+      // Obsidian 연동이 실패하거나 비활성화된 경우 파일 다운로드로 폴백
       res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
       res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(safeFilename)}.md"`);
       res.send(markdown);

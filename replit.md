@@ -82,6 +82,12 @@ Three main entities with clear relationships:
 - Environment variables managed through Replit secrets
 
 ## Changelog
+- July 1, 2025. Obsidian MCP integration for direct export
+  - Replaced file download with Obsidian direct integration using REST API
+  - Added ObsidianMCPService for seamless vault integration
+  - Updated export UI to show success messages for Obsidian saves
+  - Added Obsidian setup instructions in settings page
+  - Maintains backward compatibility with file download fallback
 - July 1, 2025. UI improvements and frequency options expansion
   - Enhanced channel display to show channel name prominently with smaller channel ID
   - Added hourly frequency options (every 1, 3, 6, 12 hours) for more flexible scheduling

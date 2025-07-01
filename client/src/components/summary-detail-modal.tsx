@@ -43,6 +43,19 @@ export function SummaryDetailModal({ summary, open, onOpenChange }: SummaryDetai
         throw new Error(errorData.message || "내보내기 실패");
       }
       
+      const contentType = response.headers.get('content-type');
+      
+      // Obsidian 직접 연동 성공인 경우
+      if (contentType?.includes('application/json')) {
+        const result = await response.json();
+        if (result.method === 'obsidian_direct') {
+          alert(`Obsidian에 성공적으로 저장되었습니다!\n경로: ${result.path}`);
+          console.log("Obsidian 직접 연동 완료:", result.path);
+          return;
+        }
+      }
+      
+      // 파일 다운로드 폴백
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       

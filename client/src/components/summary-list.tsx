@@ -19,8 +19,38 @@ export function SummaryList() {
     queryKey: ["/api/summaries", { channelId: selectedChannel !== "all" ? selectedChannel : undefined }],
   });
 
-  const handleExport = (summaryId: number) => {
-    window.open(`/api/export/${summaryId}`, '_blank');
+  const handleExport = async (summaryId: number) => {
+    try {
+      const response = await fetch(`/api/export/${summaryId}`);
+      if (!response.ok) {
+        throw new Error("내보내기 실패");
+      }
+      
+      const contentType = response.headers.get('content-type');
+      
+      // Obsidian 직접 연동 성공인 경우
+      if (contentType?.includes('application/json')) {
+        const result = await response.json();
+        if (result.method === 'obsidian_direct') {
+          alert(`Obsidian에 성공적으로 저장되었습니다!\n경로: ${result.path}`);
+          return;
+        }
+      }
+      
+      // 파일 다운로드 폴백
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `summary_${summaryId}.md`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error("Export error:", error);
+      alert("내보내기에 실패했습니다.");
+    }
   };
 
   const handleExportAll = () => {

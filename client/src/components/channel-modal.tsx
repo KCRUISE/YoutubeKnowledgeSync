@@ -6,6 +6,7 @@ import { z } from "zod";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -88,6 +89,9 @@ export function ChannelModal({ open, onOpenChange }: ChannelModalProps) {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>새 채널 추가</DialogTitle>
+          <DialogDescription>
+            YouTube 채널 URL을 입력하여 콘텐츠 요약을 시작하세요.
+          </DialogDescription>
         </DialogHeader>
         
         <Form {...form}>

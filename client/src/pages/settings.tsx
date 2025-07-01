@@ -1,0 +1,193 @@
+import { Sidebar } from "@/components/layout/sidebar";
+import { Header } from "@/components/layout/header";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { Settings, Key, Globe, Zap, Bell, Download } from "lucide-react";
+
+export default function SettingsPage() {
+  return (
+    <div className="min-h-screen flex bg-slate-50 dark:bg-background">
+      <Sidebar />
+      <main className="flex-1 flex flex-col">
+        <Header 
+          title="설정"
+          subtitle="서비스 설정을 관리하고 API 키를 구성하세요"
+        />
+        
+        <div className="flex-1 p-6 space-y-6">
+          {/* API 설정 */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Key className="w-5 h-5" />
+                <span>API 설정</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="openai-key">OpenAI API 키</Label>
+                  <div className="flex items-center space-x-2">
+                    <Input
+                      id="openai-key"
+                      type="password"
+                      placeholder="sk-..."
+                      value="••••••••••••••••"
+                      readOnly
+                    />
+                    <Badge variant="secondary">연결됨</Badge>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="youtube-key">YouTube API 키</Label>
+                  <div className="flex items-center space-x-2">
+                    <Input
+                      id="youtube-key"
+                      type="password"
+                      placeholder="AIza..."
+                      value="••••••••••••••••"
+                      readOnly
+                    />
+                    <Badge variant="secondary">연결됨</Badge>
+                  </div>
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                API 키는 환경 변수로 관리됩니다. 변경하려면 Replit Secrets에서 수정하세요.
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* 요약 설정 */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Zap className="w-5 h-5" />
+                <span>요약 설정</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="summary-language">요약 언어</Label>
+                  <Select defaultValue="korean">
+                    <SelectTrigger>
+                      <SelectValue placeholder="언어 선택" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="korean">한국어</SelectItem>
+                      <SelectItem value="english">English</SelectItem>
+                      <SelectItem value="japanese">日本語</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="summary-length">요약 길이</Label>
+                  <Select defaultValue="medium">
+                    <SelectTrigger>
+                      <SelectValue placeholder="길이 선택" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="short">짧게 (100-200자)</SelectItem>
+                      <SelectItem value="medium">보통 (200-500자)</SelectItem>
+                      <SelectItem value="long">길게 (500자 이상)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="auto-summarize">자동 요약 생성</Label>
+                  <p className="text-sm text-muted-foreground">
+                    새 비디오가 감지되면 자동으로 요약을 생성합니다
+                  </p>
+                </div>
+                <Switch id="auto-summarize" defaultChecked />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 알림 설정 */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Bell className="w-5 h-5" />
+                <span>알림 설정</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="new-video-notify">새 비디오 알림</Label>
+                  <p className="text-sm text-muted-foreground">
+                    등록된 채널에 새 비디오가 업로드되면 알림을 받습니다
+                  </p>
+                </div>
+                <Switch id="new-video-notify" defaultChecked />
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="summary-complete-notify">요약 완료 알림</Label>
+                  <p className="text-sm text-muted-foreground">
+                    비디오 요약이 완료되면 알림을 받습니다
+                  </p>
+                </div>
+                <Switch id="summary-complete-notify" defaultChecked />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 내보내기 설정 */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Download className="w-5 h-5" />
+                <span>내보내기 설정</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="export-format">기본 내보내기 형식</Label>
+                <Select defaultValue="obsidian">
+                  <SelectTrigger>
+                    <SelectValue placeholder="형식 선택" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="obsidian">Obsidian 마크다운</SelectItem>
+                    <SelectItem value="notion">Notion</SelectItem>
+                    <SelectItem value="markdown">표준 마크다운</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="include-metadata">메타데이터 포함</Label>
+                  <p className="text-sm text-muted-foreground">
+                    내보낼 때 채널명, 발행일 등의 메타데이터를 포함합니다
+                  </p>
+                </div>
+                <Switch id="include-metadata" defaultChecked />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 저장 버튼 */}
+          <div className="flex justify-end space-x-3">
+            <Button variant="outline">
+              기본값으로 재설정
+            </Button>
+            <Button>
+              설정 저장
+            </Button>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}

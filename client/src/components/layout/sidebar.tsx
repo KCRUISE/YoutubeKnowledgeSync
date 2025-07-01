@@ -43,15 +43,15 @@ export function Sidebar() {
             return (
               <li key={item.name}>
                 <Link href={item.href}>
-                  <a
+                  <div
                     className={cn(
-                      "nav-item",
+                      "nav-item cursor-pointer",
                       isActive ? "nav-item-active" : "nav-item-inactive"
                     )}
                   >
                     <item.icon className="w-4 h-4" />
                     <span>{item.name}</span>
-                  </a>
+                  </div>
                 </Link>
               </li>
             );

@@ -10,6 +10,16 @@ const youtubeService = new YouTubeService();
 const openaiService = new OpenAIService();
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Test database connectivity
+  try {
+    console.log("Testing database connection...");
+    await storage.getStats();
+    console.log("Database connection successful!");
+  } catch (error) {
+    console.error("Database connection failed:", error);
+    throw error;
+  }
+
   // Stats endpoint
   app.get("/api/stats", async (_req, res) => {
     try {

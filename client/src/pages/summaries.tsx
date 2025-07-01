@@ -1,53 +1,114 @@
-import { Sidebar } from "@/components/layout/sidebar";
-import { Header } from "@/components/layout/header";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
+import { Sidebar } from "@/components/layout/sidebar";
+import { Header } from "@/components/layout/header";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Search, Download, Eye, Clock, ExternalLink } from "lucide-react";
-import type { SummaryWithDetails, ChannelWithStats } from "@shared/schema";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { SummaryDetailModal } from "@/components/summary-detail-modal";
+import { FileText, Clock, Eye, Calendar, ExternalLink, Download } from "lucide-react";
+import type { SummaryWithDetails } from "@shared/schema";
 
 export default function Summaries() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedChannel, setSelectedChannel] = useState<string>("all");
-
-  const { data: channels = [] } = useQuery<ChannelWithStats[]>({
-    queryKey: ["/api/channels"],
-  });
+  const [selectedSummary, setSelectedSummary] = useState<SummaryWithDetails | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const { data: summaries = [], isLoading } = useQuery<SummaryWithDetails[]>({
-    queryKey: ["/api/summaries", { channelId: selectedChannel !== "all" ? selectedChannel : undefined, search: searchQuery }],
+    queryKey: ["/api/summaries", searchQuery],
+    queryFn: async () => {
+      const url = searchQuery 
+        ? `/api/summaries?search=${encodeURIComponent(searchQuery)}`
+        : "/api/summaries";
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("요약 목록을 가져오는 데 실패했습니다");
+      return response.json();
+    },
   });
 
-  const handleExport = (summaryId: number) => {
-    window.open(`/api/export/${summaryId}`, '_blank');
-  };
-
-  const handleExportAll = () => {
-    const channelId = selectedChannel !== "all" ? selectedChannel : undefined;
-    const url = channelId ? `/api/export-all?channelId=${channelId}` : '/api/export-all';
-    window.open(url, '_blank');
-  };
-
   const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString('ko-KR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+    return new Date(date).toLocaleDateString("ko-KR", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   };
 
-  const formatViewCount = (count: number) => {
-    if (count >= 10000) {
-      return `${(count / 10000).toFixed(1)}만`;
-    } else if (count >= 1000) {
-      return `${(count / 1000).toFixed(1)}천`;
+  const formatViewCount = (viewCount: number | null) => {
+    if (!viewCount) return "0";
+    if (viewCount >= 1000000) {
+      return `${(viewCount / 1000000).toFixed(1)}M`;
+    } else if (viewCount >= 1000) {
+      return `${(viewCount / 1000).toFixed(1)}K`;
     }
-    return count.toString();
+    return viewCount.toString();
   };
+
+  const handleSummaryClick = (summary: SummaryWithDetails) => {
+    // Parse sections if they exist as JSON string
+    if (summary.sections && typeof summary.sections === 'string') {
+      try {
+        summary.parsedSections = JSON.parse(summary.sections);
+      } catch (e) {
+        console.error("Failed to parse sections:", e);
+      }
+    }
+    setSelectedSummary(summary);
+    setIsModalOpen(true);
+  };
+
+  const handleExport = async (summaryId: number, title: string) => {
+    try {
+      const response = await fetch(`/api/export/${summaryId}`);
+      if (!response.ok) throw new Error("내보내기 실패");
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${title}.md`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error("내보내기 실패:", error);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex bg-slate-50 dark:bg-background">
+        <Sidebar />
+        <main className="flex-1 flex flex-col">
+          <Header 
+            title="요약 목록"
+            subtitle="생성된 영상 요약을 확인하고 관리하세요"
+          />
+          <div className="flex-1 p-6">
+            <div className="space-y-4">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Card key={i}>
+                  <CardContent className="p-6">
+                    <div className="space-y-3">
+                      <Skeleton className="h-6 w-3/4" />
+                      <Skeleton className="h-4 w-1/2" />
+                      <div className="flex gap-2">
+                        <Skeleton className="h-6 w-20" />
+                        <Skeleton className="h-6 w-16" />
+                        <Skeleton className="h-6 w-24" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex bg-slate-50 dark:bg-background">
@@ -55,146 +116,89 @@ export default function Summaries() {
       <main className="flex-1 flex flex-col">
         <Header 
           title="요약 목록"
-          subtitle="생성된 비디오 요약을 확인하고 관리하세요"
+          subtitle="생성된 영상 요약을 확인하고 관리하세요"
+          onSearch={setSearchQuery}
         />
-        
-        <div className="p-6">
-          {/* Search and Filter */}
-          <Card className="mb-6">
-            <CardContent className="p-6">
-              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-                <div className="flex flex-col sm:flex-row gap-3 flex-1">
-                  <div className="relative flex-1 max-w-md">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                    <Input
-                      placeholder="요약 검색..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
-                  <Select value={selectedChannel} onValueChange={setSelectedChannel}>
-                    <SelectTrigger className="w-full sm:w-48">
-                      <SelectValue placeholder="채널 선택" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">전체 채널</SelectItem>
-                      {channels.map((channel) => (
-                        <SelectItem key={channel.id} value={channel.id.toString()}>
-                          {channel.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button onClick={handleExportAll} className="bg-accent hover:bg-accent/90">
-                  <Download className="w-4 h-4 mr-2" />
-                  전체 내보내기
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Summaries List */}
-          {isLoading ? (
+        <div className="flex-1 p-6">
+          {summaries.length === 0 ? (
             <div className="text-center py-12">
-              <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-              <p className="text-muted-foreground">요약 목록을 불러오는 중...</p>
-            </div>
-          ) : summaries.length === 0 ? (
-            <div className="text-center py-12">
-              <FileText className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-lg font-semibold mb-2 text-foreground">요약이 없습니다</h3>
-              <p className="text-muted-foreground">채널을 추가하고 비디오 요약을 생성해보세요.</p>
+              <FileText className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+              <h3 className="text-lg font-semibold mb-2">요약이 없습니다</h3>
+              <p className="text-muted-foreground">
+                {searchQuery ? "검색 결과가 없습니다." : "영상에서 요약을 생성해보세요."}
+              </p>
             </div>
           ) : (
             <div className="space-y-4">
               {summaries.map((summary) => (
-                <Card key={summary.id} className="summary-card">
+                <Card key={summary.id} className="hover:shadow-md transition-shadow cursor-pointer">
                   <CardContent className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <Badge variant="secondary">
-                            {summary.channelName}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0" onClick={() => handleSummaryClick(summary)}>
+                        <h3 className="font-semibold text-lg text-foreground hover:text-primary transition-colors line-clamp-2 mb-3">
+                          {summary.title}
+                        </h3>
+                        
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
+                          <Badge variant="outline">{summary.channelName}</Badge>
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-4 h-4" />
+                            {summary.videoDuration}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Eye className="w-4 h-4" />
+                            {formatViewCount(summary.videoViewCount)}회
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-4 h-4" />
                             {formatDate(summary.videoPublishedAt)}
                           </span>
                         </div>
-                        
-                        <h4 className="text-sm font-medium text-foreground mb-2 leading-relaxed">
-                          {summary.title}
-                        </h4>
-                        
+
                         {summary.coreTheme && (
-                          <div className="text-sm text-blue-600 dark:text-blue-400 mb-2 italic font-medium">
-                            💡 "{summary.coreTheme}"
+                          <p className="text-sm text-muted-foreground line-clamp-2 mb-4 bg-muted/50 p-3 rounded">
+                            🎯 {summary.coreTheme}
+                          </p>
+                        )}
+
+                        {summary.tags && summary.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mb-3">
+                            {summary.tags.slice(0, 4).map((tag, index) => (
+                              <Badge key={index} variant="secondary" className="text-xs">
+                                {tag}
+                              </Badge>
+                            ))}
+                            {summary.tags.length > 4 && (
+                              <Badge variant="secondary" className="text-xs">
+                                +{summary.tags.length - 4}
+                              </Badge>
+                            )}
                           </div>
                         )}
-                        
-                        <p className="text-sm text-muted-foreground leading-relaxed mb-3 line-clamp-3">
-                          {summary.content.substring(0, 200)}...
-                        </p>
-                        
-                        {summary.keyPoints && summary.keyPoints.length > 0 && (
-                          <div className="mb-3">
-                            <p className="text-xs font-medium text-foreground mb-1">🎯 핵심 포인트:</p>
-                            <div className="flex flex-wrap gap-1">
-                              {summary.keyPoints.slice(0, 3).map((point, index) => (
-                                <Badge key={index} variant="outline" className="text-xs">
-                                  {point.length > 20 ? `${point.substring(0, 20)}...` : point}
-                                </Badge>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        
-                        {summary.insights && summary.insights.length > 0 && (
-                          <div className="mb-3">
-                            <p className="text-xs font-medium text-foreground mb-1">💡 핵심 인사이트:</p>
-                            <div className="flex flex-wrap gap-1">
-                              {summary.insights.slice(0, 2).map((insight, index) => (
-                                <Badge key={index} variant="secondary" className="text-xs bg-emerald-50 dark:bg-emerald-950 border-emerald-200 dark:border-emerald-800">
-                                  {insight.length > 25 ? `${insight.substring(0, 25)}...` : insight}
-                                </Badge>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        
-                        <div className="flex items-center space-x-4 text-xs text-muted-foreground">
-                          {summary.videoDuration && (
-                            <span className="flex items-center">
-                              <Clock className="w-3 h-3 mr-1" />
-                              {summary.videoDuration}
-                            </span>
-                          )}
-                          {summary.videoViewCount && (
-                            <span className="flex items-center">
-                              <Eye className="w-3 h-3 mr-1" />
-                              {formatViewCount(summary.videoViewCount)} 조회수
-                            </span>
-                          )}
-                        </div>
                       </div>
-                      
-                      <div className="flex items-center space-x-2 ml-4">
+
+                      <div className="flex flex-col gap-2">
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
-                          onClick={() => window.open(summary.videoUrl, '_blank')}
-                          className="text-muted-foreground hover:text-primary"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(summary.videoUrl, '_blank');
+                          }}
                         >
-                          <ExternalLink className="w-4 h-4" />
+                          <ExternalLink className="w-4 h-4 mr-1" />
+                          영상 보기
                         </Button>
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
-                          onClick={() => handleExport(summary.id)}
-                          className="text-muted-foreground hover:text-accent"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleExport(summary.id, summary.title);
+                          }}
                         >
-                          <Download className="w-4 h-4" />
+                          <Download className="w-4 h-4 mr-1" />
+                          내보내기
                         </Button>
                       </div>
                     </div>
@@ -205,6 +209,12 @@ export default function Summaries() {
           )}
         </div>
       </main>
+
+      <SummaryDetailModal
+        summary={selectedSummary}
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+      />
     </div>
   );
 }

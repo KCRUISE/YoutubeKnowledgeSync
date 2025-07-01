@@ -155,6 +155,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Video routes
+  app.get("/api/videos", async (req, res) => {
+    try {
+      const { channelId, limit } = req.query;
+      
+      if (channelId) {
+        const videos = await storage.getVideosByChannel(parseInt(channelId as string));
+        res.json(videos);
+      } else {
+        const videos = await storage.getLatestVideos(limit ? parseInt(limit as string) : 50);
+        res.json(videos);
+      }
+    } catch (error) {
+      console.error("영상 목록 가져오기 실패:", error);
+      res.status(500).json({ message: "영상 목록을 가져오는 데 실패했습니다." });
+    }
+  });
+
   app.post("/api/summaries/:videoId", async (req, res) => {
     try {
       const videoId = parseInt(req.params.videoId);

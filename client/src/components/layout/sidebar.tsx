@@ -7,12 +7,14 @@ import {
   Download, 
   Settings, 
   User,
-  Play
+  Play,
+  PlayCircle
 } from "lucide-react";
 
 const navigation = [
   { name: "대시보드", href: "/", icon: Home },
   { name: "채널 관리", href: "/channels", icon: Tv },
+  { name: "영상 목록", href: "/videos", icon: PlayCircle },
   { name: "요약 목록", href: "/summaries", icon: FileText },
   { name: "설정", href: "/settings", icon: Settings },
 ];

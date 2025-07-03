@@ -82,6 +82,13 @@ Three main entities with clear relationships:
 - Environment variables managed through Replit secrets
 
 ## Changelog
+- July 3, 2025. Enhanced video list page with advanced features
+  - Added pagination with smart page navigation (max 5 visible pages)
+  - Implemented multiple view modes: list, grid, and detailed view
+  - Added comprehensive sorting by date, title, views, and duration
+  - Integrated search functionality for titles and descriptions
+  - Enhanced filtering with automatic page reset on search/sort changes
+  - Improved responsive design for all view modes
 - July 1, 2025. Obsidian MCP integration for direct export
   - Replaced file download with Obsidian direct integration using REST API
   - Added ObsidianMCPService for seamless vault integration

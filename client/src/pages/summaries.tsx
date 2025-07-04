@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,13 +28,29 @@ export default function Summaries() {
   const [sortBy, setSortBy] = useState<SortBy>("date");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [searchQuery, setSearchQuery] = useState("");
-  const [tagFilter, setTagFilter] = useState("__all__");
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [showTagDropdown, setShowTagDropdown] = useState(false);
   const [insightFilter, setInsightFilter] = useState("__all__");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(12);
   const [selectedSummary, setSelectedSummary] = useState<SummaryWithDetails | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const { toast } = useToast();
+  const tagDropdownRef = useRef<HTMLDivElement>(null);
+
+  // 외부 클릭시 드롭다운 닫기
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (tagDropdownRef.current && !tagDropdownRef.current.contains(event.target as Node)) {
+        setShowTagDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const { data: channels = [] } = useQuery<ChannelWithStats[]>({
     queryKey: ["/api/channels"],
@@ -74,9 +90,12 @@ export default function Summaries() {
         }
       }
       
-      // 태그 필터
-      if (tagFilter && tagFilter !== "__all__") {
-        if (!summary.tags || !summary.tags.some((tag: string) => tag === tagFilter)) {
+      // 태그 필터 (멀티선택)
+      if (selectedTags.length > 0) {
+        const hasTags = summary.tags && summary.tags.length > 0;
+        if (!hasTags || !selectedTags.some(selectedTag => 
+          summary.tags!.includes(selectedTag)
+        )) {
           return false;
         }
       }
@@ -130,8 +149,14 @@ export default function Summaries() {
     setSelectedSummaries(new Set());
   };
 
-  const handleTagFilterChange = (tag: string) => {
-    setTagFilter(tag);
+  const handleTagToggle = (tag: string) => {
+    setSelectedTags(prev => {
+      if (prev.includes(tag)) {
+        return prev.filter(t => t !== tag);
+      } else {
+        return [...prev, tag];
+      }
+    });
     setCurrentPage(1);
     setSelectedSummaries(new Set());
   };
@@ -335,31 +360,59 @@ export default function Summaries() {
                 <span className="text-sm font-medium text-muted-foreground">필터:</span>
               </div>
 
-              <Select value={tagFilter} onValueChange={handleTagFilterChange}>
-                <SelectTrigger className="w-44">
-                  <div className="flex items-center gap-2">
-                    <Tag className="w-4 h-4 text-muted-foreground" />
-                    <SelectValue placeholder="태그 선택" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent className="max-h-60">
-                  <SelectItem value="__all__">
-                    <div className="flex items-center gap-2 whitespace-nowrap">
-                      <span className="font-medium">모든 태그</span>
-                      <Badge variant="secondary" className="text-xs">
-                        {allTags.length}개
-                      </Badge>
+              <div className="relative" ref={tagDropdownRef}>
+                <Button
+                  variant="outline"
+                  className="w-44 justify-start"
+                  onClick={() => setShowTagDropdown(!showTagDropdown)}
+                >
+                  <Tag className="w-4 h-4 mr-2 text-muted-foreground" />
+                  {selectedTags.length === 0 ? (
+                    "태그 선택"
+                  ) : selectedTags.length === 1 ? (
+                    selectedTags[0].length > 15 ? `${selectedTags[0].substring(0, 15)}...` : selectedTags[0]
+                  ) : (
+                    `${selectedTags.length}개 태그`
+                  )}
+                </Button>
+                {showTagDropdown && (
+                  <div className="absolute top-full left-0 w-64 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
+                    <div className="p-2">
+                      <div className="flex items-center justify-between p-2 border-b border-gray-200 dark:border-gray-700">
+                        <span className="text-sm font-medium">태그 선택</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setSelectedTags([])}
+                          className="h-6 px-2 text-xs"
+                        >
+                          모두 해제
+                        </Button>
+                      </div>
+                      {allTags.map((tag) => (
+                        <div
+                          key={tag}
+                          className="flex items-center space-x-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                          onClick={() => handleTagToggle(tag)}
+                        >
+                          <Checkbox
+                            checked={selectedTags.includes(tag)}
+                            onCheckedChange={() => handleTagToggle(tag)}
+                          />
+                          <span className="text-sm truncate">
+                            {tag.length > 35 ? `${tag.substring(0, 35)}...` : tag}
+                          </span>
+                        </div>
+                      ))}
+                      {allTags.length === 0 && (
+                        <div className="p-2 text-sm text-muted-foreground text-center">
+                          사용 가능한 태그가 없습니다
+                        </div>
+                      )}
                     </div>
-                  </SelectItem>
-                  {allTags.map((tag) => (
-                    <SelectItem key={tag} value={tag}>
-                      <span className="truncate">
-                        {tag.length > 30 ? `${tag.substring(0, 30)}...` : tag}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                  </div>
+                )}
+              </div>
 
               <Select value={insightFilter} onValueChange={handleInsightFilterChange}>
                 <SelectTrigger className="w-48">
@@ -404,7 +457,7 @@ export default function Summaries() {
           </div>
 
           {/* 활성 필터 표시 */}
-          {(searchQuery || tagFilter !== "__all__" || insightFilter !== "__all__" || selectedChannel !== "all") && (
+          {(searchQuery || selectedTags.length > 0 || insightFilter !== "__all__" || selectedChannel !== "all") && (
             <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
@@ -415,9 +468,9 @@ export default function Summaries() {
                     검색: {searchQuery}
                   </Badge>
                 )}
-                {tagFilter !== "__all__" && (
+                {selectedTags.length > 0 && (
                   <Badge variant="secondary" className="text-blue-700 dark:text-blue-300">
-                    태그: {tagFilter.length > 20 ? `${tagFilter.substring(0, 20)}...` : tagFilter}
+                    태그: {selectedTags.length === 1 ? selectedTags[0] : `${selectedTags.length}개`}
                   </Badge>
                 )}
                 {insightFilter !== "__all__" && (
@@ -435,7 +488,7 @@ export default function Summaries() {
                   size="sm"
                   onClick={() => {
                     setSearchQuery("");
-                    setTagFilter("__all__");
+                    setSelectedTags([]);
                     setInsightFilter("__all__");
                     setSelectedChannel("all");
                     setCurrentPage(1);
@@ -560,7 +613,7 @@ export default function Summaries() {
             <div className="text-center py-12">
               <FileText className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
               <p className="text-sm text-muted-foreground">
-                {searchQuery || tagFilter !== "__all__" || insightFilter !== "__all__" ? "검색 결과가 없습니다" : "생성된 요약이 없습니다"}
+                {searchQuery || selectedTags.length > 0 || insightFilter !== "__all__" ? "검색 결과가 없습니다" : "생성된 요약이 없습니다"}
               </p>
             </div>
           ) : (

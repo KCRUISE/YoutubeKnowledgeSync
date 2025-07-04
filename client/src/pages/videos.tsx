@@ -174,8 +174,18 @@ export default function Videos() {
     return (summaries as any[]).some((s: any) => s.videoId === videoId);
   };
 
-  // 다중 선택 관련 함수들
+  // 다중 선택 관련 함수들 (요약이 있는 영상만 선택 가능)
   const toggleVideoSelection = (videoId: number) => {
+    // 요약이 없는 영상은 선택할 수 없음
+    if (!hasSummary(videoId)) {
+      toast({
+        title: "선택 불가",
+        description: "요약이 생성된 영상만 삭제할 수 있습니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const newSelected = new Set(selectedVideos);
     if (newSelected.has(videoId)) {
       newSelected.delete(videoId);
@@ -186,18 +196,31 @@ export default function Videos() {
   };
 
   const toggleSelectAll = () => {
-    const currentVideoIds = currentVideos.map((v: any) => v.id);
-    const allCurrentSelected = currentVideoIds.every(id => selectedVideos.has(id));
+    // 요약이 있는 영상만 선택 대상으로 함
+    const selectableVideoIds = currentVideos
+      .filter((v: any) => hasSummary(v.id))
+      .map((v: any) => v.id);
     
-    if (allCurrentSelected) {
-      // 현재 페이지의 모든 영상이 선택되어 있으면 해제
+    if (selectableVideoIds.length === 0) {
+      toast({
+        title: "선택 가능한 영상이 없습니다",
+        description: "요약이 생성된 영상만 삭제할 수 있습니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const allSelectableSelected = selectableVideoIds.every(id => selectedVideos.has(id));
+    
+    if (allSelectableSelected) {
+      // 선택 가능한 모든 영상이 선택되어 있으면 해제
       const newSelected = new Set(selectedVideos);
-      currentVideoIds.forEach(id => newSelected.delete(id));
+      selectableVideoIds.forEach(id => newSelected.delete(id));
       setSelectedVideos(newSelected);
     } else {
-      // 현재 페이지의 영상들을 모두 선택
+      // 선택 가능한 영상들을 모두 선택
       const newSelected = new Set(selectedVideos);
-      currentVideoIds.forEach(id => newSelected.add(id));
+      selectableVideoIds.forEach(id => newSelected.add(id));
       setSelectedVideos(newSelected);
     }
   };
@@ -431,11 +454,14 @@ export default function Videos() {
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <Checkbox
-                  checked={currentVideos.length > 0 && currentVideos.every((v: any) => selectedVideos.has(v.id))}
+                  checked={
+                    currentVideos.filter((v: any) => hasSummary(v.id)).length > 0 && 
+                    currentVideos.filter((v: any) => hasSummary(v.id)).every((v: any) => selectedVideos.has(v.id))
+                  }
                   onCheckedChange={toggleSelectAll}
                 />
                 <span className="text-sm font-medium">
-                  전체 선택 ({selectedVideos.size}/{filteredAndSortedVideos.length})
+                  전체 선택 ({selectedVideos.size}/{currentVideos.filter((v: any) => hasSummary(v.id)).length})
                 </span>
                 {selectedVideos.size > 0 && selectedVideos.size < currentVideos.length && (
                   <span className="text-xs text-muted-foreground">
@@ -484,6 +510,8 @@ export default function Videos() {
                             <Checkbox
                               checked={selectedVideos.has(video.id)}
                               onCheckedChange={() => toggleVideoSelection(video.id)}
+                              disabled={!hasSummary(video.id)}
+                              className={!hasSummary(video.id) ? "opacity-50 cursor-not-allowed" : ""}
                             />
                             <div className="flex-1 min-w-0">
                               <div className="flex items-start justify-between">
@@ -550,6 +578,8 @@ export default function Videos() {
                             <Checkbox
                               checked={selectedVideos.has(video.id)}
                               onCheckedChange={() => toggleVideoSelection(video.id)}
+                              disabled={!hasSummary(video.id)}
+                              className={!hasSummary(video.id) ? "opacity-50 cursor-not-allowed" : ""}
                             />
                             <div className="flex-1 min-w-0">
                               <h3 className="font-medium mb-2 line-clamp-2">
@@ -601,6 +631,8 @@ export default function Videos() {
                             <Checkbox
                               checked={selectedVideos.has(video.id)}
                               onCheckedChange={() => toggleVideoSelection(video.id)}
+                              disabled={!hasSummary(video.id)}
+                              className={!hasSummary(video.id) ? "opacity-50 cursor-not-allowed" : ""}
                             />
                             <div className="flex-1 min-w-0">
                               <h3 className="font-medium text-xl mb-3">
@@ -712,11 +744,11 @@ export default function Videos() {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>영상 삭제 확인</AlertDialogTitle>
+            <AlertDialogTitle>요약된 영상 삭제 확인</AlertDialogTitle>
             <AlertDialogDescription>
-              선택한 {selectedVideos.size}개의 영상을 삭제하시겠습니까?
+              선택한 {selectedVideos.size}개의 영상과 관련 요약을 삭제하시겠습니까?
               <br />
-              이 작업은 되돌릴 수 없습니다.
+              영상과 함께 생성된 요약도 모두 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

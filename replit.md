@@ -82,6 +82,12 @@ Three main entities with clear relationships:
 - Environment variables managed through Replit secrets
 
 ## Changelog
+- July 4, 2025. Enhanced video deletion with summary restriction
+  - Modified video deletion to only allow deletion of videos with generated summaries
+  - Added visual indicators (disabled checkboxes) for videos without summaries
+  - Updated selection logic to prevent selection of non-summarized videos
+  - Enhanced deletion confirmation dialog to clarify that summaries will also be deleted
+  - Improved user feedback with toast messages for attempted invalid selections
 - July 3, 2025. Advanced channel and video management features
   - Added bulk video fetching for all channels simultaneously
   - Implemented concurrent summary generation (no more waiting for one to finish)

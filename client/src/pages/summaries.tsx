@@ -344,7 +344,7 @@ export default function Summaries() {
                 </SelectTrigger>
                 <SelectContent className="max-h-60">
                   <SelectItem value="__all__">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 whitespace-nowrap">
                       <span className="font-medium">모든 태그</span>
                       <Badge variant="secondary" className="text-xs">
                         {allTags.length}개
@@ -370,7 +370,7 @@ export default function Summaries() {
                 </SelectTrigger>
                 <SelectContent className="max-h-60">
                   <SelectItem value="__all__">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 whitespace-nowrap">
                       <span className="font-medium">모든 인사이트</span>
                       <Badge variant="secondary" className="text-xs">
                         {allInsights.length}개

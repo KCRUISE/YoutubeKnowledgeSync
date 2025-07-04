@@ -28,7 +28,7 @@ export default function Summaries() {
   const [sortBy, setSortBy] = useState<SortBy>("date");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [searchQuery, setSearchQuery] = useState("");
-  const [tagFilter, setTagFilter] = useState("");
+  const [tagFilter, setTagFilter] = useState("__all__");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(12);
   const [selectedSummary, setSelectedSummary] = useState<SummaryWithDetails | null>(null);
@@ -42,6 +42,14 @@ export default function Summaries() {
   const { data: summaries = [], isLoading } = useQuery<SummaryWithDetails[]>({
     queryKey: ["/api/summaries"],
   });
+
+  // 모든 태그와 인사이트 수집
+  const allTags = Array.from(new Set(
+    summaries.flatMap(summary => [
+      ...(summary.tags || []),
+      ...(summary.insights || [])
+    ])
+  )).sort();
 
   // 필터링 로직
   const filteredSummaries = summaries
@@ -65,16 +73,15 @@ export default function Summaries() {
       }
       
       // 태그 필터
-      if (tagFilter) {
-        const tagLower = tagFilter.toLowerCase();
+      if (tagFilter && tagFilter !== "__all__") {
         let hasTag = false;
         
         if (summary.tags) {
-          hasTag = summary.tags.some((tag: string) => tag.toLowerCase().includes(tagLower));
+          hasTag = summary.tags.some((tag: string) => tag === tagFilter);
         }
         
         if (summary.insights) {
-          hasTag = hasTag || summary.insights.some((insight: string) => insight.toLowerCase().includes(tagLower));
+          hasTag = hasTag || summary.insights.some((insight: string) => insight === tagFilter);
         }
         
         if (!hasTag) {
@@ -296,8 +303,8 @@ export default function Summaries() {
         
         <div className="flex-1 p-6 space-y-6">
           {/* 검색 및 필터 */}
-          <div className="flex items-center gap-4 p-4 bg-card rounded-lg border">
-            <div className="flex-1 relative">
+          <div className="flex flex-wrap items-center gap-4 p-4 bg-card rounded-lg border">
+            <div className="flex-1 min-w-64 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <Input
                 placeholder="제목, 내용, 채널명으로 검색..."
@@ -307,18 +314,36 @@ export default function Summaries() {
               />
             </div>
 
-            <div className="relative">
-              <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-              <Input
-                placeholder="태그 검색..."
-                value={tagFilter}
-                onChange={(e) => handleTagFilterChange(e.target.value)}
-                className="pl-10 w-40"
-              />
-            </div>
+            <Select value={tagFilter} onValueChange={handleTagFilterChange}>
+              <SelectTrigger className="w-52">
+                <div className="flex items-center gap-2">
+                  <Tag className="w-4 h-4 text-muted-foreground" />
+                  <SelectValue placeholder="태그 선택" />
+                </div>
+              </SelectTrigger>
+              <SelectContent className="max-h-60">
+                <SelectItem value="__all__">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">모든 태그</span>
+                    <Badge variant="secondary" className="text-xs">
+                      {allTags.length}개
+                    </Badge>
+                  </div>
+                </SelectItem>
+                {allTags.map((tag) => (
+                  <SelectItem key={tag} value={tag}>
+                    <div className="flex items-center justify-between w-full">
+                      <span className="truncate">
+                        {tag.length > 35 ? `${tag.substring(0, 35)}...` : tag}
+                      </span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
             <Select value={selectedChannel} onValueChange={setSelectedChannel}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-44">
                 <SelectValue placeholder="채널 선택" />
               </SelectTrigger>
               <SelectContent>
@@ -334,7 +359,7 @@ export default function Summaries() {
             <Button 
               size="sm" 
               onClick={handleExportAll}
-              className="bg-accent hover:bg-accent/90"
+              className="bg-accent hover:bg-accent/90 whitespace-nowrap"
             >
               <Download className="w-4 h-4 mr-1" />
               전체 내보내기
@@ -402,6 +427,47 @@ export default function Summaries() {
               </Button>
             </div>
           </div>
+
+          {/* 활성 필터 표시 */}
+          {(searchQuery || tagFilter !== "__all__" || selectedChannel !== "all") && (
+            <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                  활성 필터:
+                </span>
+                {searchQuery && (
+                  <Badge variant="secondary" className="text-blue-700 dark:text-blue-300">
+                    검색: {searchQuery}
+                  </Badge>
+                )}
+                {tagFilter !== "__all__" && (
+                  <Badge variant="secondary" className="text-blue-700 dark:text-blue-300">
+                    태그: {tagFilter.length > 20 ? `${tagFilter.substring(0, 20)}...` : tagFilter}
+                  </Badge>
+                )}
+                {selectedChannel !== "all" && (
+                  <Badge variant="secondary" className="text-blue-700 dark:text-blue-300">
+                    채널: {channels.find(c => c.id.toString() === selectedChannel)?.name}
+                  </Badge>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setTagFilter("__all__");
+                    setSelectedChannel("all");
+                    setCurrentPage(1);
+                    setSelectedSummaries(new Set());
+                  }}
+                  className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 h-6 px-2"
+                >
+                  <X className="w-3 h-3 mr-1" />
+                  모든 필터 초기화
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* 선택된 항목 정보 */}
           {selectedSummaries.size > 0 && (

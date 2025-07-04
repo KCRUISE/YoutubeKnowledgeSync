@@ -6,10 +6,33 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { PlayCircle, Clock, Eye, Sparkles, CheckCircle, Search, Grid, List, LayoutGrid, SortAsc, SortDesc, ChevronLeft, ChevronRight, Filter } from "lucide-react";
+import {
+  PlayCircle,
+  Clock,
+  Eye,
+  Sparkles,
+  CheckCircle,
+  Search,
+  Grid,
+  List,
+  LayoutGrid,
+  SortAsc,
+  SortDesc,
+  ChevronLeft,
+  ChevronRight,
+  Filter,
+  Trash2,
+  AlertCircle,
+} from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Channel, Video } from "@shared/schema";
@@ -26,18 +49,23 @@ export default function Videos() {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
+  const [generatingVideos, setGeneratingVideos] = useState<Set<number>>(new Set());
+  const [deletingVideos, setDeletingVideos] = useState<Set<number>>(new Set());
   const { toast } = useToast();
 
-  const { data: channels = [], isLoading: channelsLoading } = useQuery<Channel[]>({
+  const { data: channels = [], isLoading: channelsLoading } = useQuery<
+    Channel[]
+  >({
     queryKey: ["/api/channels"],
   });
 
   const { data: videos = [], isLoading: videosLoading } = useQuery<Video[]>({
     queryKey: ["/api/videos", selectedChannelId],
     queryFn: async () => {
-      const url = selectedChannelId === "all" 
-        ? "/api/videos" 
-        : `/api/videos?channelId=${selectedChannelId}`;
+      const url =
+        selectedChannelId === "all"
+          ? "/api/videos"
+          : `/api/videos?channelId=${selectedChannelId}`;
       const response = await fetch(url);
       if (!response.ok) throw new Error("영상 목록을 가져오는 데 실패했습니다");
       return response.json();
@@ -48,22 +76,62 @@ export default function Videos() {
     queryKey: ["/api/summaries"],
   });
 
-  const createSummaryMutation = useMutation({
+  const deleteVideoMutation = useMutation({
     mutationFn: async (videoId: number) => {
-      await apiRequest("POST", `/api/summaries/${videoId}`);
+      setDeletingVideos(prev => new Set(prev).add(videoId));
+      await apiRequest("DELETE", `/api/videos/${videoId}`);
     },
-    onSuccess: () => {
+    onSuccess: (_, videoId) => {
+      setDeletingVideos(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(videoId);
+        return newSet;
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/videos"] });
       queryClient.invalidateQueries({ queryKey: ["/api/summaries"] });
-      toast({ title: "요약이 성공적으로 생성되었습니다." });
+      toast({ title: "영상이 성공적으로 삭제되었습니다." });
     },
-    onError: (error) => {
-      toast({ 
-        title: "요약 생성 실패", 
-        description: error instanceof Error ? error.message : "요약을 생성하는 데 실패했습니다.",
-        variant: "destructive" 
+    onError: (error, videoId) => {
+      setDeletingVideos(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(videoId);
+        return newSet;
+      });
+      toast({
+        title: "영상 삭제 실패",
+        description:
+          error instanceof Error
+            ? error.message
+            : "영상을 삭제하는 데 실패했습니다.",
+        variant: "destructive",
       });
     },
   });
+
+  const createSummary = async (videoId: number) => {
+    setGeneratingVideos(prev => new Set(prev).add(videoId));
+    
+    try {
+      await apiRequest("POST", `/api/summaries/${videoId}`);
+      queryClient.invalidateQueries({ queryKey: ["/api/summaries"] });
+      toast({ title: "요약이 성공적으로 생성되었습니다." });
+    } catch (error) {
+      toast({
+        title: "요약 생성 실패",
+        description:
+          error instanceof Error
+            ? error.message
+            : "요약을 생성하는 데 실패했습니다.",
+        variant: "destructive",
+      });
+    } finally {
+      setGeneratingVideos(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(videoId);
+        return newSet;
+      });
+    }
+  };
 
   const formatDate = (date: Date) => {
     return new Date(date).toLocaleDateString("ko-KR", {
@@ -89,7 +157,9 @@ export default function Videos() {
   };
 
   const getChannelName = (channelId: number) => {
-    const channel = (channels as Channel[]).find((c: Channel) => c.id === channelId);
+    const channel = (channels as Channel[]).find(
+      (c: Channel) => c.id === channelId,
+    );
     return channel?.name || "알 수 없는 채널";
   };
 
@@ -97,19 +167,36 @@ export default function Videos() {
     return (summaries as any[]).some((s: any) => s.videoId === videoId);
   };
 
+  const handleDeleteVideo = (videoId: number) => {
+    if (confirm("정말로 이 영상을 삭제하시겠습니까? 관련된 요약도 함께 삭제됩니다.")) {
+      deleteVideoMutation.mutate(videoId);
+    }
+  };
+
+  const isVideoGenerating = (videoId: number) => {
+    return generatingVideos.has(videoId);
+  };
+
+  const isVideoDeleting = (videoId: number) => {
+    return deletingVideos.has(videoId);
+  };
+
   // 필터링 및 정렬된 비디오
   const filteredAndSortedVideos = videos
     .filter((video: Video) => {
-      const matchesSearch = video.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           video.description?.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch =
+        video.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        video.description?.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesSearch;
     })
     .sort((a: Video, b: Video) => {
       let comparison = 0;
-      
+
       switch (sortBy) {
         case "date":
-          comparison = new Date(a.publishedAt).getTime() - new Date(b.publishedAt).getTime();
+          comparison =
+            new Date(a.publishedAt).getTime() -
+            new Date(b.publishedAt).getTime();
           break;
         case "title":
           comparison = a.title.localeCompare(b.title);
@@ -126,7 +213,7 @@ export default function Videos() {
         default:
           comparison = 0;
       }
-      
+
       return sortOrder === "asc" ? comparison : -comparison;
     });
 
@@ -165,7 +252,7 @@ export default function Videos() {
       <div className="min-h-screen flex bg-slate-50 dark:bg-background">
         <Sidebar />
         <main className="flex-1 flex flex-col">
-          <Header 
+          <Header
             title="영상 목록"
             subtitle="가져온 영상들을 확인하고 요약을 생성하세요"
           />
@@ -196,7 +283,7 @@ export default function Videos() {
     <div className="min-h-screen flex bg-slate-50 dark:bg-background">
       <Sidebar />
       <main className="flex-1 flex flex-col">
-        <Header 
+        <Header
           title="영상 목록"
           subtitle="가져온 영상들을 확인하고 요약을 생성하세요"
         />
@@ -205,20 +292,26 @@ export default function Videos() {
           <div className="mb-6 space-y-4">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div className="flex items-center gap-4">
-                <Select value={selectedChannelId} onValueChange={handleChannelChange}>
+                <Select
+                  value={selectedChannelId}
+                  onValueChange={handleChannelChange}
+                >
                   <SelectTrigger className="w-64">
                     <SelectValue placeholder="채널 선택" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">모든 채널</SelectItem>
                     {(channels as Channel[]).map((channel: Channel) => (
-                      <SelectItem key={channel.id} value={channel.id.toString()}>
+                      <SelectItem
+                        key={channel.id}
+                        value={channel.id.toString()}
+                      >
                         {channel.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                
+
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <Input
@@ -229,12 +322,15 @@ export default function Videos() {
                   />
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-4">
                 {/* 정렬 옵션 */}
                 <div className="flex items-center gap-2">
                   <Filter className="w-4 h-4 text-gray-500" />
-                  <Select value={sortBy} onValueChange={(value) => handleSortChange(value as SortBy)}>
+                  <Select
+                    value={sortBy}
+                    onValueChange={(value) => handleSortChange(value as SortBy)}
+                  >
                     <SelectTrigger className="w-32">
                       <SelectValue />
                     </SelectTrigger>
@@ -248,12 +344,18 @@ export default function Videos() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+                    onClick={() =>
+                      setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+                    }
                   >
-                    {sortOrder === "asc" ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
+                    {sortOrder === "asc" ? (
+                      <SortAsc className="w-4 h-4" />
+                    ) : (
+                      <SortDesc className="w-4 h-4" />
+                    )}
                   </Button>
                 </div>
-                
+
                 {/* 보기 모드 */}
                 <div className="flex items-center bg-muted rounded-lg p-1">
                   <Button
@@ -280,13 +382,17 @@ export default function Videos() {
                 </div>
               </div>
             </div>
-            
+
             {/* 결과 요약 */}
             <div className="flex items-center justify-between text-sm text-muted-foreground">
               <span>
-                총 {filteredAndSortedVideos.length}개 영상 중 {startIndex + 1}-{Math.min(endIndex, filteredAndSortedVideos.length)}번째 표시
+                총 {filteredAndSortedVideos.length}개 영상 중 {startIndex + 1}-
+                {Math.min(endIndex, filteredAndSortedVideos.length)}번째 표시
               </span>
-              <Select value={itemsPerPage.toString()} onValueChange={(value) => setItemsPerPage(parseInt(value))}>
+              <Select
+                value={itemsPerPage.toString()}
+                onValueChange={(value) => setItemsPerPage(parseInt(value))}
+              >
                 <SelectTrigger className="w-24">
                   <SelectValue />
                 </SelectTrigger>
@@ -307,7 +413,9 @@ export default function Videos() {
                 {searchQuery ? "검색 결과가 없습니다" : "영상이 없습니다"}
               </h3>
               <p className="text-muted-foreground">
-                {searchQuery ? "다른 검색어를 시도해보세요" : "채널에서 새로운 영상을 가져오거나 다른 채널을 선택해보세요"}
+                {searchQuery
+                  ? "다른 검색어를 시도해보세요"
+                  : "채널에서 새로운 영상을 가져오거나 다른 채널을 선택해보세요"}
               </p>
             </div>
           ) : (
@@ -316,7 +424,10 @@ export default function Videos() {
               {viewMode === "list" && (
                 <div className="space-y-4">
                   {currentVideos.map((video: Video) => (
-                    <Card key={video.id} className="hover:shadow-md transition-shadow">
+                    <Card
+                      key={video.id}
+                      className="hover:shadow-md transition-shadow"
+                    >
                       <CardContent className="p-6">
                         <div className="flex space-x-4">
                           <div className="w-32 h-20 bg-muted rounded flex items-center justify-center flex-shrink-0">
@@ -343,7 +454,10 @@ export default function Videos() {
                             <div className="flex items-center justify-between">
                               <div className="flex items-center space-x-2">
                                 {hasSummary(video.id) ? (
-                                  <Badge variant="default" className="flex items-center">
+                                  <Badge
+                                    variant="default"
+                                    className="flex items-center"
+                                  >
                                     <CheckCircle className="w-3 h-3 mr-1" />
                                     요약 완료
                                   </Badge>
@@ -355,7 +469,12 @@ export default function Videos() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => window.open(`https://www.youtube.com/watch?v=${video.videoId}`, '_blank')}
+                                  onClick={() =>
+                                    window.open(
+                                      `https://www.youtube.com/watch?v=${video.videoId}`,
+                                      "_blank",
+                                    )
+                                  }
                                 >
                                   <PlayCircle className="w-4 h-4 mr-1" />
                                   영상 보기
@@ -363,13 +482,31 @@ export default function Videos() {
                                 {!hasSummary(video.id) && (
                                   <Button
                                     size="sm"
-                                    onClick={() => createSummaryMutation.mutate(video.id)}
-                                    disabled={createSummaryMutation.isPending}
+                                    onClick={() =>
+                                      createSummary(video.id)
+                                    }
+                                    disabled={isVideoGenerating(video.id)}
                                   >
                                     <Sparkles className="w-4 h-4 mr-1" />
-                                    {createSummaryMutation.isPending ? "요약 중..." : "요약 생성"}
+                                    {isVideoGenerating(video.id)
+                                      ? "요약 중..."
+                                      : "요약 생성"}
                                   </Button>
                                 )}
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleDeleteVideo(video.id)}
+                                  disabled={isVideoDeleting(video.id)}
+                                  className="text-destructive hover:text-destructive"
+                                >
+                                  {isVideoDeleting(video.id) ? (
+                                    <AlertCircle className="w-4 h-4 mr-1 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="w-4 h-4 mr-1" />
+                                  )}
+                                  삭제
+                                </Button>
                               </div>
                             </div>
                           </div>
@@ -384,7 +521,10 @@ export default function Videos() {
               {viewMode === "grid" && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                   {currentVideos.map((video: Video) => (
-                    <Card key={video.id} className="hover:shadow-md transition-shadow">
+                    <Card
+                      key={video.id}
+                      className="hover:shadow-md transition-shadow"
+                    >
                       <CardContent className="p-4">
                         <div className="aspect-video bg-muted rounded mb-3 flex items-center justify-center">
                           <PlayCircle className="w-8 h-8 text-muted-foreground" />
@@ -403,7 +543,9 @@ export default function Videos() {
                               {formatViewCount(video.viewCount)}
                             </span>
                           </div>
-                          <p className="text-xs">{formatDate(video.publishedAt)}</p>
+                          <p className="text-xs">
+                            {formatDate(video.publishedAt)}
+                          </p>
                         </div>
                         <div className="flex items-center justify-between mt-3">
                           {hasSummary(video.id) ? (
@@ -412,25 +554,47 @@ export default function Videos() {
                               요약 완료
                             </Badge>
                           ) : (
-                            <Badge variant="secondary" className="text-xs">요약 대기</Badge>
+                            <Badge variant="secondary" className="text-xs">
+                              요약 대기
+                            </Badge>
                           )}
                           <div className="flex space-x-1">
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => window.open(`https://www.youtube.com/watch?v=${video.videoId}`, '_blank')}
+                              onClick={() =>
+                                window.open(
+                                  `https://www.youtube.com/watch?v=${video.videoId}`,
+                                  "_blank",
+                                )
+                              }
                             >
                               <PlayCircle className="w-3 h-3" />
                             </Button>
                             {!hasSummary(video.id) && (
                               <Button
                                 size="sm"
-                                onClick={() => createSummaryMutation.mutate(video.id)}
-                                disabled={createSummaryMutation.isPending}
+                                onClick={() =>
+                                  createSummary(video.id)
+                                }
+                                disabled={isVideoGenerating(video.id)}
                               >
                                 <Sparkles className="w-3 h-3" />
                               </Button>
                             )}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteVideo(video.id)}
+                              disabled={isVideoDeleting(video.id)}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              {isVideoDeleting(video.id) ? (
+                                <AlertCircle className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <Trash2 className="w-3 h-3" />
+                              )}
+                            </Button>
                           </div>
                         </div>
                       </CardContent>
@@ -443,7 +607,10 @@ export default function Videos() {
               {viewMode === "detailed" && (
                 <div className="space-y-6">
                   {currentVideos.map((video: Video) => (
-                    <Card key={video.id} className="hover:shadow-md transition-shadow">
+                    <Card
+                      key={video.id}
+                      className="hover:shadow-md transition-shadow"
+                    >
                       <CardContent className="p-6">
                         <div className="flex space-x-6">
                           <div className="w-48 h-32 bg-muted rounded flex items-center justify-center flex-shrink-0">
@@ -475,7 +642,10 @@ export default function Videos() {
                             <div className="flex items-center justify-between">
                               <div className="flex items-center space-x-2">
                                 {hasSummary(video.id) ? (
-                                  <Badge variant="default" className="flex items-center">
+                                  <Badge
+                                    variant="default"
+                                    className="flex items-center"
+                                  >
                                     <CheckCircle className="w-3 h-3 mr-1" />
                                     요약 완료
                                   </Badge>
@@ -487,7 +657,12 @@ export default function Videos() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => window.open(`https://www.youtube.com/watch?v=${video.videoId}`, '_blank')}
+                                  onClick={() =>
+                                    window.open(
+                                      `https://www.youtube.com/watch?v=${video.videoId}`,
+                                      "_blank",
+                                    )
+                                  }
                                 >
                                   <PlayCircle className="w-4 h-4 mr-1" />
                                   영상 보기
@@ -495,13 +670,31 @@ export default function Videos() {
                                 {!hasSummary(video.id) && (
                                   <Button
                                     size="sm"
-                                    onClick={() => createSummaryMutation.mutate(video.id)}
-                                    disabled={createSummaryMutation.isPending}
+                                    onClick={() =>
+                                      createSummary(video.id)
+                                    }
+                                    disabled={isVideoGenerating(video.id)}
                                   >
                                     <Sparkles className="w-4 h-4 mr-1" />
-                                    {createSummaryMutation.isPending ? "요약 중..." : "요약 생성"}
+                                    {isVideoGenerating(video.id)
+                                      ? "요약 중..."
+                                      : "요약 생성"}
                                   </Button>
                                 )}
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleDeleteVideo(video.id)}
+                                  disabled={isVideoDeleting(video.id)}
+                                  className="text-destructive hover:text-destructive"
+                                >
+                                  {isVideoDeleting(video.id) ? (
+                                    <AlertCircle className="w-4 h-4 mr-1 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="w-4 h-4 mr-1" />
+                                  )}
+                                  삭제
+                                </Button>
                               </div>
                             </div>
                           </div>
@@ -524,19 +717,22 @@ export default function Videos() {
                     <ChevronLeft className="w-4 h-4" />
                     이전
                   </Button>
-                  
+
                   {(() => {
                     const maxVisiblePages = 5;
                     const halfRange = Math.floor(maxVisiblePages / 2);
                     let startPage = Math.max(1, currentPage - halfRange);
-                    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-                    
+                    let endPage = Math.min(
+                      totalPages,
+                      startPage + maxVisiblePages - 1,
+                    );
+
                     if (endPage - startPage + 1 < maxVisiblePages) {
                       startPage = Math.max(1, endPage - maxVisiblePages + 1);
                     }
-                    
+
                     const pages = [];
-                    
+
                     if (startPage > 1) {
                       pages.push(
                         <Button
@@ -546,13 +742,17 @@ export default function Videos() {
                           onClick={() => handlePageChange(1)}
                         >
                           1
-                        </Button>
+                        </Button>,
                       );
                       if (startPage > 2) {
-                        pages.push(<span key="start-ellipsis" className="px-2">...</span>);
+                        pages.push(
+                          <span key="start-ellipsis" className="px-2">
+                            ...
+                          </span>,
+                        );
                       }
                     }
-                    
+
                     for (let i = startPage; i <= endPage; i++) {
                       pages.push(
                         <Button
@@ -562,13 +762,17 @@ export default function Videos() {
                           onClick={() => handlePageChange(i)}
                         >
                           {i}
-                        </Button>
+                        </Button>,
                       );
                     }
-                    
+
                     if (endPage < totalPages) {
                       if (endPage < totalPages - 1) {
-                        pages.push(<span key="end-ellipsis" className="px-2">...</span>);
+                        pages.push(
+                          <span key="end-ellipsis" className="px-2">
+                            ...
+                          </span>,
+                        );
                       }
                       pages.push(
                         <Button
@@ -578,13 +782,13 @@ export default function Videos() {
                           onClick={() => handlePageChange(totalPages)}
                         >
                           {totalPages}
-                        </Button>
+                        </Button>,
                       );
                     }
-                    
+
                     return pages;
                   })()}
-                  
+
                   <Button
                     variant="outline"
                     size="sm"

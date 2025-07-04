@@ -213,6 +213,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/videos/:id", async (req, res) => {
+    try {
+      const videoId = parseInt(req.params.id);
+      const success = await storage.deleteVideo(videoId);
+      
+      if (!success) {
+        return res.status(404).json({ message: "영상을 찾을 수 없습니다." });
+      }
+
+      res.json({ message: "영상이 삭제되었습니다." });
+    } catch (error) {
+      console.error("영상 삭제 실패:", error);
+      res.status(500).json({ message: "영상을 삭제하는 데 실패했습니다." });
+    }
+  });
+
   app.post("/api/summaries/:videoId", async (req, res) => {
     try {
       const videoId = parseInt(req.params.videoId);
@@ -389,6 +405,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("비디오 가져오기 실패:", error);
       res.status(500).json({ message: "비디오를 가져오는 데 실패했습니다." });
+    }
+  });
+
+  // Fetch videos for all channels
+  app.post("/api/channels/fetch-all-videos", async (req, res) => {
+    try {
+      const channels = await storage.getChannels();
+      
+      if (channels.length === 0) {
+        return res.status(400).json({ message: "등록된 채널이 없습니다." });
+      }
+
+      let successCount = 0;
+      let errorCount = 0;
+      
+      // Process all channels concurrently
+      const results = await Promise.allSettled(
+        channels.map(async (channel) => {
+          try {
+            await fetchChannelVideos(channel.id, channel.channelId);
+            return { channelId: channel.id, success: true };
+          } catch (error) {
+            console.error(`채널 ${channel.name} 비디오 가져오기 실패:`, error);
+            return { channelId: channel.id, success: false, error };
+          }
+        })
+      );
+
+      results.forEach((result) => {
+        if (result.status === 'fulfilled' && result.value.success) {
+          successCount++;
+        } else {
+          errorCount++;
+        }
+      });
+
+      const message = errorCount === 0 
+        ? `모든 채널(${successCount}개)에서 새영상을 성공적으로 가져왔습니다.`
+        : `${successCount}개 채널 성공, ${errorCount}개 채널 실패`;
+      
+      res.json({ 
+        message,
+        successCount,
+        errorCount,
+        totalChannels: channels.length
+      });
+    } catch (error) {
+      console.error("전체 채널 비디오 가져오기 실패:", error);
+      res.status(500).json({ message: "전체 채널에서 비디오를 가져오는 데 실패했습니다." });
     }
   });
 

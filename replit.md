@@ -82,6 +82,12 @@ Three main entities with clear relationships:
 - Environment variables managed through Replit secrets
 
 ## Changelog
+- July 3, 2025. Advanced channel and video management features
+  - Added bulk video fetching for all channels simultaneously
+  - Implemented concurrent summary generation (no more waiting for one to finish)
+  - Added video deletion functionality with confirmation dialogs
+  - Enhanced UI with individual loading states for each video operation
+  - Improved error handling and user feedback for all operations
 - July 3, 2025. Enhanced video list page with advanced features
   - Added pagination with smart page navigation (max 5 visible pages)
   - Implemented multiple view modes: list, grid, and detailed view

@@ -71,6 +71,23 @@ export default function Channels() {
     },
   });
 
+  const fetchAllVideosMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("POST", "/api/channels/fetch-all-videos");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/channels"] });
+      toast({ title: "모든 채널에서 새영상을 성공적으로 가져왔습니다." });
+    },
+    onError: (error) => {
+      toast({ 
+        title: "전체 가져오기 실패", 
+        description: error instanceof Error ? error.message : "전체 채널에서 영상을 가져오는 데 실패했습니다.",
+        variant: "destructive" 
+      });
+    },
+  });
+
   const handleDeleteChannel = (channelId: number) => {
     if (confirm("정말로 이 채널을 삭제하시겠습니까? 관련된 모든 요약도 함께 삭제됩니다.")) {
       deleteChannelMutation.mutate(channelId);
@@ -119,8 +136,24 @@ export default function Channels() {
               </Button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {channels.map((channel) => (
+            <>
+              {/* 전체 작업 버튼 */}
+              <div className="mb-6 flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <h2 className="text-lg font-semibold">채널 목록 ({channels.length}개)</h2>
+                </div>
+                <Button
+                  onClick={() => fetchAllVideosMutation.mutate()}
+                  disabled={fetchAllVideosMutation.isPending}
+                  className="flex items-center space-x-2"
+                >
+                  <RefreshCw className={`w-4 h-4 ${fetchAllVideosMutation.isPending ? 'animate-spin' : ''}`} />
+                  <span>{fetchAllVideosMutation.isPending ? '가져오는 중...' : '모든 채널 새영상 가져오기'}</span>
+                </Button>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {channels.map((channel) => (
                 <Card key={channel.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-6">
                     <div className="flex items-start space-x-4">
@@ -196,8 +229,9 @@ export default function Channels() {
                     </div>
                   </CardContent>
                 </Card>
-              ))}
-            </div>
+                ))}
+              </div>
+            </>
           )}
         </div>
       </main>

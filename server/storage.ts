@@ -17,6 +17,7 @@ export interface IStorage {
   getVideo(id: number): Promise<Video | undefined>;
   getVideoByVideoId(videoId: string): Promise<Video | undefined>;
   createVideo(video: InsertVideo): Promise<Video>;
+  deleteVideo(id: number): Promise<boolean>;
   getLatestVideos(limit?: number): Promise<Video[]>;
 
   // Summary operations
@@ -148,6 +149,24 @@ export class MemStorage implements IStorage {
     };
     this.videos.set(id, video);
     return video;
+  }
+
+  async deleteVideo(id: number): Promise<boolean> {
+    const existed = this.videos.has(id);
+    if (existed) {
+      this.videos.delete(id);
+      // Also delete any related summaries
+      const summariesToDelete: number[] = [];
+      this.summaries.forEach((summary, summaryId) => {
+        if (summary.videoId === id) {
+          summariesToDelete.push(summaryId);
+        }
+      });
+      summariesToDelete.forEach(summaryId => {
+        this.summaries.delete(summaryId);
+      });
+    }
+    return existed;
   }
 
   async getLatestVideos(limit = 10): Promise<Video[]> {
@@ -326,6 +345,20 @@ export class DatabaseStorage implements IStorage {
       .values(insertVideo)
       .returning();
     return video;
+  }
+
+  async deleteVideo(id: number): Promise<boolean> {
+    try {
+      // First delete any related summaries
+      await db.delete(summaries).where(eq(summaries.videoId, id));
+      
+      // Then delete the video
+      const result = await db.delete(videos).where(eq(videos.id, id));
+      return (result.rowCount ?? 0) > 0;
+    } catch (error) {
+      console.error("비디오 삭제 중 오류:", error);
+      return false;
+    }
   }
 
   async getLatestVideos(limit = 10): Promise<Video[]> {

@@ -35,6 +35,7 @@ import {
   Trash2,
   AlertCircle,
   X,
+  Calendar,
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -379,7 +380,7 @@ export default function Videos() {
                 onClick={() => handleSortChange("date")}
                 className={sortBy === "date" ? "bg-accent" : ""}
               >
-                날짜 {sortBy === "date" && (sortOrder === "asc" ? <SortAsc className="w-4 h-4 ml-1" /> : <SortDesc className="w-4 h-4 ml-1" />)}
+                게시일 {sortBy === "date" && (sortOrder === "asc" ? <SortAsc className="w-4 h-4 ml-1" /> : <SortDesc className="w-4 h-4 ml-1" />)}
               </Button>
               <Button
                 variant="outline"
@@ -496,8 +497,8 @@ export default function Videos() {
                                       {getChannelName(video.channelId)}
                                     </span>
                                     <span className="flex items-center gap-1">
-                                      <Clock className="w-4 h-4" />
-                                      {formatDate(video.publishedAt)}
+                                      <Calendar className="w-4 h-4" />
+                                      게시일 {formatDate(video.publishedAt)}
                                     </span>
                                     {video.duration && (
                                       <span className="flex items-center gap-1">
@@ -556,7 +557,10 @@ export default function Videos() {
                               </h3>
                               <div className="text-sm text-muted-foreground mb-2">
                                 <p className="truncate">{getChannelName(video.channelId)}</p>
-                                <p>{formatDate(video.publishedAt)}</p>
+                                <p className="flex items-center gap-1">
+                                  <Calendar className="w-3 h-3" />
+                                  게시일 {formatDate(video.publishedAt)}
+                                </p>
                                 {video.viewCount && (
                                   <p className="flex items-center gap-1 mt-1">
                                     <Eye className="w-3 h-3" />
@@ -613,8 +617,8 @@ export default function Videos() {
                                   {getChannelName(video.channelId)}
                                 </span>
                                 <span className="flex items-center gap-1">
-                                  <Clock className="w-4 h-4" />
-                                  {formatDate(video.publishedAt)}
+                                  <Calendar className="w-4 h-4" />
+                                  게시일 {formatDate(video.publishedAt)}
                                 </span>
                                 {video.duration && (
                                   <span className="flex items-center gap-1">

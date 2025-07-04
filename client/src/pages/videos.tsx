@@ -438,7 +438,7 @@ export default function Videos() {
                               {video.title}
                             </h3>
                             <div className="flex items-center space-x-4 text-sm text-muted-foreground mb-3">
-                              <Badge variant="outline" className="mr-2">
+                              <Badge variant="outline" className="mr-2 secondary-badge">
                                 {getChannelName(video.channelId)}
                               </Badge>
                               <span className="flex items-center">

@@ -171,7 +171,7 @@ export function SummaryList() {
                           <p className="text-xs font-medium text-foreground mb-1">💡 핵심 인사이트:</p>
                           <div className="flex flex-wrap gap-1">
                             {summary.insights.slice(0, 2).map((insight, index) => (
-                              <Badge key={index} variant="outline" className="text-xs bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+                              <Badge key={index} variant="outline" className="text-xs tag-badge">
                                 {insight.length > 30 ? `${insight.substring(0, 30)}...` : insight}
                               </Badge>
                             ))}

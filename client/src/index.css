@@ -15,7 +15,7 @@
   --input: hsl(214.3, 31.8%, 91.4%);
   --primary: hsl(221.2, 83.2%, 53.3%);
   --primary-foreground: hsl(210, 40%, 98%);
-  --secondary: hsl(250.5, 95.2%, 63.9%);
+  --secondary: hsl(210, 40%, 96%);
   --secondary-foreground: hsl(222.2, 84%, 4.9%);
   --accent: hsl(142.1, 76.2%, 36.3%);
   --accent-foreground: hsl(355.7, 100%, 97.3%);
@@ -47,7 +47,7 @@
   --input: hsl(217.2, 32.6%, 17.5%);
   --primary: hsl(221.2, 83.2%, 53.3%);
   --primary-foreground: hsl(210, 40%, 98%);
-  --secondary: hsl(250.5, 95.2%, 63.9%);
+  --secondary: hsl(217.2, 32.6%, 17.5%);
   --secondary-foreground: hsl(210, 40%, 98%);
   --accent: hsl(142.1, 76.2%, 36.3%);
   --accent-foreground: hsl(355.7, 100%, 97.3%);
@@ -95,5 +95,60 @@
   
   .summary-card {
     @apply border border-border rounded-lg p-4 hover:border-primary hover:border-opacity-50 transition-colors bg-card;
+  }
+  
+  /* 뱃지 스타일 개선 - 가독성 향상 */
+  .tag-badge {
+    @apply bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors;
+  }
+  
+  .dark .tag-badge {
+    @apply bg-blue-950 text-blue-300 border-blue-800 hover:bg-blue-900;
+  }
+  
+  .status-badge {
+    @apply bg-green-50 text-green-700 border border-green-200;
+  }
+  
+  .dark .status-badge {
+    @apply bg-green-950 text-green-300 border-green-800;
+  }
+  
+  .secondary-badge {
+    @apply bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100 transition-colors;
+  }
+  
+  .dark .secondary-badge {
+    @apply bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700;
+  }
+  
+  /* 전체적인 뱃지 스타일 통일 */
+  .badge {
+    @apply px-2 py-1 text-xs font-medium rounded-md;
+  }
+  
+  /* 기본 뱃지 스타일 Override */
+  .badge-default {
+    @apply bg-green-50 text-green-700 border border-green-200;
+  }
+  
+  .dark .badge-default {
+    @apply bg-green-950 text-green-300 border-green-800;
+  }
+  
+  .badge-secondary {
+    @apply bg-gray-50 text-gray-700 border border-gray-200;
+  }
+  
+  .dark .badge-secondary {
+    @apply bg-gray-800 text-gray-300 border-gray-700;
+  }
+  
+  .badge-outline {
+    @apply bg-gray-50 text-gray-700 border border-gray-200;
+  }
+  
+  .dark .badge-outline {
+    @apply bg-gray-800 text-gray-300 border-gray-700;
   }
 }

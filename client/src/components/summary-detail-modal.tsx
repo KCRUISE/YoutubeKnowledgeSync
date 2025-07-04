@@ -91,7 +91,7 @@ export function SummaryDetailModal({ summary, open, onOpenChange }: SummaryDetai
                 {summary.title}
               </DialogTitle>
               <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
-                <Badge variant="outline">{summary.channelName}</Badge>
+                <Badge variant="outline" className="secondary-badge">{summary.channelName}</Badge>
                 <span className="flex items-center gap-1">
                   <Clock className="w-4 h-4" />
                   {summary.videoDuration}
@@ -169,7 +169,7 @@ export function SummaryDetailModal({ summary, open, onOpenChange }: SummaryDetai
                         {section.keyWords && section.keyWords.length > 0 && (
                           <div className="flex flex-wrap gap-1">
                             {section.keyWords.map((keyword, keyIndex) => (
-                              <Badge key={keyIndex} variant="outline" className="text-xs">
+                              <Badge key={keyIndex} variant="outline" className="text-xs tag-badge">
                                 {keyword}
                               </Badge>
                             ))}
@@ -217,7 +217,7 @@ export function SummaryDetailModal({ summary, open, onOpenChange }: SummaryDetai
                   <h3 className="text-lg font-semibold mb-3 text-primary">🏷️ 태그</h3>
                   <div className="flex flex-wrap gap-2">
                     {summary.tags.map((tag, index) => (
-                      <Badge key={index} variant="secondary">
+                      <Badge key={index} variant="secondary" className="tag-badge">
                         {tag}
                       </Badge>
                     ))}

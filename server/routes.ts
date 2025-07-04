@@ -280,6 +280,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete summary
+  app.delete("/api/summaries/:summaryId", async (req, res) => {
+    try {
+      const summaryId = parseInt(req.params.summaryId);
+      const success = await storage.deleteSummary(summaryId);
+      
+      if (!success) {
+        return res.status(404).json({ message: "요약을 찾을 수 없습니다." });
+      }
+      
+      res.json({ message: "요약이 삭제되었습니다." });
+    } catch (error) {
+      console.error("요약 삭제 실패:", error);
+      res.status(500).json({ message: "요약 삭제에 실패했습니다." });
+    }
+  });
+
   // Export routes
   app.get("/api/export/:summaryId", async (req, res) => {
     try {

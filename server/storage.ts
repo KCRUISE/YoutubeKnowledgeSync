@@ -25,6 +25,7 @@ export interface IStorage {
   getSummariesByChannel(channelId: number): Promise<SummaryWithDetails[]>;
   getSummary(id: number): Promise<Summary | undefined>;
   createSummary(summary: InsertSummary): Promise<Summary>;
+  deleteSummary(id: number): Promise<boolean>;
   getLatestSummaries(limit?: number): Promise<SummaryWithDetails[]>;
   searchSummaries(query: string): Promise<SummaryWithDetails[]>;
 
@@ -202,6 +203,14 @@ export class MemStorage implements IStorage {
     };
     this.summaries.set(id, summary);
     return summary;
+  }
+
+  async deleteSummary(id: number): Promise<boolean> {
+    const existed = this.summaries.has(id);
+    if (existed) {
+      this.summaries.delete(id);
+    }
+    return existed;
   }
 
   async getLatestSummaries(limit = 10): Promise<SummaryWithDetails[]> {
@@ -445,6 +454,11 @@ export class DatabaseStorage implements IStorage {
       .values(insertSummary)
       .returning();
     return summary;
+  }
+
+  async deleteSummary(id: number): Promise<boolean> {
+    const result = await db.delete(summaries).where(eq(summaries.id, id));
+    return (result.rowCount ?? 0) > 0;
   }
 
   async getLatestSummaries(limit = 10): Promise<SummaryWithDetails[]> {

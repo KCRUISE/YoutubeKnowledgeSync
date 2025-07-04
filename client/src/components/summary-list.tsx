@@ -1,15 +1,23 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FileText, Eye, Download, Clock, ExternalLink, ChevronDown } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { FileText, Eye, Download, Clock, ExternalLink, ChevronDown, Trash2, X } from "lucide-react";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import type { SummaryWithDetails, ChannelWithStats } from "@shared/schema";
 
 export function SummaryList() {
   const [selectedChannel, setSelectedChannel] = useState<string>("all");
   const [displayCount, setDisplayCount] = useState(5);
+  const [selectedSummaries, setSelectedSummaries] = useState<Set<number>>(new Set());
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deletingSummaries, setDeletingSummaries] = useState<Set<number>>(new Set());
+  const { toast } = useToast();
 
   const { data: channels = [] } = useQuery<ChannelWithStats[]>({
     queryKey: ["/api/channels"],
@@ -18,6 +26,66 @@ export function SummaryList() {
   const { data: summaries = [], isLoading } = useQuery<SummaryWithDetails[]>({
     queryKey: ["/api/summaries", { channelId: selectedChannel !== "all" ? selectedChannel : undefined }],
   });
+
+  const filteredSummaries = summaries.filter(summary => 
+    selectedChannel === "all" || summary.channelId.toString() === selectedChannel
+  );
+
+  const displayedSummaries = filteredSummaries.slice(0, displayCount);
+
+  // 다중 선택 관리 함수들
+  const toggleSummarySelection = (summaryId: number) => {
+    const newSelected = new Set(selectedSummaries);
+    if (newSelected.has(summaryId)) {
+      newSelected.delete(summaryId);
+    } else {
+      newSelected.add(summaryId);
+    }
+    setSelectedSummaries(newSelected);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedSummaries.size === displayedSummaries.length) {
+      setSelectedSummaries(new Set());
+    } else {
+      setSelectedSummaries(new Set(displayedSummaries.map(s => s.id)));
+    }
+  };
+
+  const clearSelection = () => {
+    setSelectedSummaries(new Set());
+    setShowDeleteDialog(false);
+  };
+
+  const handleBulkDelete = async () => {
+    try {
+      const summaryIds = Array.from(selectedSummaries);
+      setDeletingSummaries(new Set(summaryIds));
+      
+      await Promise.all(
+        summaryIds.map(summaryId => 
+          apiRequest(`/api/summaries/${summaryId}`, "DELETE")
+        )
+      );
+      
+      await queryClient.invalidateQueries({ queryKey: ["/api/summaries"] });
+      
+      toast({
+        title: "요약 삭제 완료",
+        description: `${summaryIds.length}개의 요약이 삭제되었습니다.`,
+      });
+      
+      clearSelection();
+    } catch (error) {
+      toast({
+        title: "삭제 실패",
+        description: "요약 삭제 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingSummaries(new Set());
+    }
+  };
 
   const handleExport = async (summaryId: number) => {
     try {
@@ -76,7 +144,7 @@ export function SummaryList() {
     return count.toString();
   };
 
-  const displayedSummaries = summaries.slice(0, displayCount);
+
 
   if (isLoading) {
     return (
@@ -131,6 +199,49 @@ export function SummaryList() {
         </div>
       </CardHeader>
       <CardContent>
+        {/* 선택된 항목 정보 및 일괄 작업 */}
+        {selectedSummaries.size > 0 && (
+          <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                  {selectedSummaries.size}개 요약 선택됨
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearSelection}
+                  className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
+                >
+                  <X className="w-4 h-4 mr-1" />
+                  선택 해제
+                </Button>
+              </div>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setShowDeleteDialog(true)}
+                disabled={deletingSummaries.size > 0}
+              >
+                <Trash2 className="w-4 h-4 mr-1" />
+                선택된 요약 삭제
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* 전체 선택 체크박스 */}
+        {displayedSummaries.length > 0 && (
+          <div className="flex items-center gap-2 mb-4">
+            <Checkbox
+              checked={displayedSummaries.length > 0 && selectedSummaries.size === displayedSummaries.length}
+              onCheckedChange={toggleSelectAll}
+              className="border-gray-300"
+            />
+            <span className="text-sm text-muted-foreground">전체 선택</span>
+          </div>
+        )}
+
         {summaries.length === 0 ? (
           <div className="text-center py-8">
             <FileText className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
@@ -142,7 +253,13 @@ export function SummaryList() {
               {displayedSummaries.map((summary) => (
                 <div key={summary.id} className="summary-card">
                   <div className="flex items-start justify-between">
-                    <div className="flex-1">
+                    <div className="flex items-start gap-3 flex-1">
+                      <Checkbox
+                        checked={selectedSummaries.has(summary.id)}
+                        onCheckedChange={() => toggleSummarySelection(summary.id)}
+                        className="mt-1"
+                      />
+                      <div className="flex-1">
                       <div className="flex items-center space-x-2 mb-2">
                         <Badge variant="secondary">
                           {summary.channelName}
@@ -193,6 +310,7 @@ export function SummaryList() {
                           </span>
                         )}
                       </div>
+                      </div>
                     </div>
                     
                     <div className="flex items-center space-x-2 ml-4">
@@ -232,6 +350,30 @@ export function SummaryList() {
           </>
         )}
       </CardContent>
+      
+      {/* 삭제 확인 대화상자 */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>요약 삭제 확인</AlertDialogTitle>
+            <AlertDialogDescription>
+              선택한 {selectedSummaries.size}개의 요약을 삭제하시겠습니까?
+              <br />
+              이 작업은 되돌릴 수 없습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+              disabled={deletingSummaries.size > 0}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {deletingSummaries.size > 0 ? "삭제 중..." : "삭제"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }

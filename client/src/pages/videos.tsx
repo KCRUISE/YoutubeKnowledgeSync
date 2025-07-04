@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import {
   PlayCircle,
   Clock,
@@ -32,6 +34,7 @@ import {
   Filter,
   Trash2,
   AlertCircle,
+  X,
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -49,8 +52,10 @@ export default function Videos() {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
+  const [selectedVideos, setSelectedVideos] = useState<Set<number>>(new Set());
   const [generatingVideos, setGeneratingVideos] = useState<Set<number>>(new Set());
   const [deletingVideos, setDeletingVideos] = useState<Set<number>>(new Set());
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { toast } = useToast();
 
   const { data: channels = [], isLoading: channelsLoading } = useQuery<
@@ -167,9 +172,58 @@ export default function Videos() {
     return (summaries as any[]).some((s: any) => s.videoId === videoId);
   };
 
-  const handleDeleteVideo = (videoId: number) => {
-    if (confirm("정말로 이 영상을 삭제하시겠습니까? 관련된 요약도 함께 삭제됩니다.")) {
-      deleteVideoMutation.mutate(videoId);
+  // 다중 선택 관련 함수들
+  const toggleVideoSelection = (videoId: number) => {
+    const newSelected = new Set(selectedVideos);
+    if (newSelected.has(videoId)) {
+      newSelected.delete(videoId);
+    } else {
+      newSelected.add(videoId);
+    }
+    setSelectedVideos(newSelected);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedVideos.size === currentVideos.length) {
+      setSelectedVideos(new Set());
+    } else {
+      setSelectedVideos(new Set(currentVideos.map(v => v.id)));
+    }
+  };
+
+  const clearSelection = () => {
+    setSelectedVideos(new Set());
+    setShowDeleteDialog(false);
+  };
+
+  const handleBulkDelete = async () => {
+    try {
+      const videoIds = Array.from(selectedVideos);
+      setDeletingVideos(new Set(videoIds));
+      
+      await Promise.all(
+        videoIds.map(videoId => 
+          apiRequest(`/api/videos/${videoId}`, "DELETE")
+        )
+      );
+      
+      await queryClient.invalidateQueries({ queryKey: ["/api/videos"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/summaries"] });
+      
+      toast({
+        title: "영상 삭제 완료",
+        description: `${videoIds.length}개의 영상이 삭제되었습니다.`,
+      });
+      
+      clearSelection();
+    } catch (error) {
+      toast({
+        title: "삭제 실패",
+        description: "영상 삭제 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingVideos(new Set());
     }
   };
 
@@ -290,6 +344,37 @@ export default function Videos() {
         <div className="flex-1 p-6">
           {/* 컨트롤 바 */}
           <div className="mb-6 space-y-4">
+            {/* 선택된 항목 정보 및 일괄 작업 */}
+            {selectedVideos.size > 0 && (
+              <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                      {selectedVideos.size}개 영상 선택됨
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={clearSelection}
+                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
+                    >
+                      <X className="w-4 h-4 mr-1" />
+                      선택 해제
+                    </Button>
+                  </div>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setShowDeleteDialog(true)}
+                    disabled={deletingVideos.size > 0}
+                  >
+                    <Trash2 className="w-4 h-4 mr-1" />
+                    선택된 영상 삭제
+                  </Button>
+                </div>
+              </div>
+            )}
+            
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div className="flex items-center gap-4">
                 <Select
@@ -383,12 +468,22 @@ export default function Videos() {
               </div>
             </div>
 
-            {/* 결과 요약 */}
+            {/* 결과 요약 및 전체 선택 */}
             <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <span>
-                총 {filteredAndSortedVideos.length}개 영상 중 {startIndex + 1}-
-                {Math.min(endIndex, filteredAndSortedVideos.length)}번째 표시
-              </span>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    checked={currentVideos.length > 0 && selectedVideos.size === currentVideos.length}
+                    onCheckedChange={toggleSelectAll}
+                    className="border-gray-300"
+                  />
+                  <span>전체 선택</span>
+                </div>
+                <span>
+                  총 {filteredAndSortedVideos.length}개 영상 중 {startIndex + 1}-
+                  {Math.min(endIndex, filteredAndSortedVideos.length)}번째 표시
+                </span>
+              </div>
               <Select
                 value={itemsPerPage.toString()}
                 onValueChange={(value) => setItemsPerPage(parseInt(value))}
@@ -430,6 +525,13 @@ export default function Videos() {
                     >
                       <CardContent className="p-6">
                         <div className="flex space-x-4">
+                          <div className="flex items-center">
+                            <Checkbox
+                              checked={selectedVideos.has(video.id)}
+                              onCheckedChange={() => toggleVideoSelection(video.id)}
+                              className="mr-3"
+                            />
+                          </div>
                           <div className="w-32 h-20 bg-muted rounded flex items-center justify-center flex-shrink-0">
                             <PlayCircle className="w-8 h-8 text-muted-foreground" />
                           </div>
@@ -493,20 +595,6 @@ export default function Videos() {
                                       : "요약 생성"}
                                   </Button>
                                 )}
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleDeleteVideo(video.id)}
-                                  disabled={isVideoDeleting(video.id)}
-                                  className="text-destructive hover:text-destructive"
-                                >
-                                  {isVideoDeleting(video.id) ? (
-                                    <AlertCircle className="w-4 h-4 mr-1 animate-spin" />
-                                  ) : (
-                                    <Trash2 className="w-4 h-4 mr-1" />
-                                  )}
-                                  삭제
-                                </Button>
                               </div>
                             </div>
                           </div>
@@ -526,6 +614,12 @@ export default function Videos() {
                       className="hover:shadow-md transition-shadow"
                     >
                       <CardContent className="p-4">
+                        <div className="flex items-start justify-between mb-3">
+                          <Checkbox
+                            checked={selectedVideos.has(video.id)}
+                            onCheckedChange={() => toggleVideoSelection(video.id)}
+                          />
+                        </div>
                         <div className="aspect-video bg-muted rounded mb-3 flex items-center justify-center">
                           <PlayCircle className="w-8 h-8 text-muted-foreground" />
                         </div>
@@ -582,19 +676,6 @@ export default function Videos() {
                                 <Sparkles className="w-3 h-3" />
                               </Button>
                             )}
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDeleteVideo(video.id)}
-                              disabled={isVideoDeleting(video.id)}
-                              className="text-destructive hover:text-destructive"
-                            >
-                              {isVideoDeleting(video.id) ? (
-                                <AlertCircle className="w-3 h-3 animate-spin" />
-                              ) : (
-                                <Trash2 className="w-3 h-3" />
-                              )}
-                            </Button>
                           </div>
                         </div>
                       </CardContent>
@@ -613,6 +694,13 @@ export default function Videos() {
                     >
                       <CardContent className="p-6">
                         <div className="flex space-x-6">
+                          <div className="flex items-start">
+                            <Checkbox
+                              checked={selectedVideos.has(video.id)}
+                              onCheckedChange={() => toggleVideoSelection(video.id)}
+                              className="mt-2 mr-4"
+                            />
+                          </div>
                           <div className="w-48 h-32 bg-muted rounded flex items-center justify-center flex-shrink-0">
                             <PlayCircle className="w-12 h-12 text-muted-foreground" />
                           </div>
@@ -681,20 +769,6 @@ export default function Videos() {
                                       : "요약 생성"}
                                   </Button>
                                 )}
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleDeleteVideo(video.id)}
-                                  disabled={isVideoDeleting(video.id)}
-                                  className="text-destructive hover:text-destructive"
-                                >
-                                  {isVideoDeleting(video.id) ? (
-                                    <AlertCircle className="w-4 h-4 mr-1 animate-spin" />
-                                  ) : (
-                                    <Trash2 className="w-4 h-4 mr-1" />
-                                  )}
-                                  삭제
-                                </Button>
                               </div>
                             </div>
                           </div>
@@ -804,6 +878,30 @@ export default function Videos() {
           )}
         </div>
       </main>
+      
+      {/* 삭제 확인 대화상자 */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>영상 삭제 확인</AlertDialogTitle>
+            <AlertDialogDescription>
+              선택한 {selectedVideos.size}개의 영상을 삭제하시겠습니까?
+              <br />
+              관련된 요약도 함께 삭제되며, 이 작업은 되돌릴 수 없습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+              disabled={deletingVideos.size > 0}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {deletingVideos.size > 0 ? "삭제 중..." : "삭제"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

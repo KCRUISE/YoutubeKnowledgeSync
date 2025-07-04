@@ -185,10 +185,19 @@ export default function Videos() {
   };
 
   const toggleSelectAll = () => {
-    if (selectedVideos.size === currentVideos.length) {
-      setSelectedVideos(new Set());
+    const currentVideoIds = currentVideos.map((v: any) => v.id);
+    const allCurrentSelected = currentVideoIds.every(id => selectedVideos.has(id));
+    
+    if (allCurrentSelected) {
+      // 현재 페이지의 모든 영상이 선택되어 있으면 해제
+      const newSelected = new Set(selectedVideos);
+      currentVideoIds.forEach(id => newSelected.delete(id));
+      setSelectedVideos(newSelected);
     } else {
-      setSelectedVideos(new Set(currentVideos.map((v: any) => v.id)));
+      // 현재 페이지의 영상들을 모두 선택
+      const newSelected = new Set(selectedVideos);
+      currentVideoIds.forEach(id => newSelected.add(id));
+      setSelectedVideos(newSelected);
     }
   };
 
@@ -416,36 +425,45 @@ export default function Videos() {
             </div>
           </div>
 
-          {/* 선택된 영상 수 및 일괄 삭제 버튼 */}
-          {selectedVideos.size > 0 && (
-            <div className="flex items-center justify-between p-4 bg-accent rounded-lg border">
+          {/* 영상 선택 및 관리 바 */}
+          <div className="flex items-center justify-between p-4 bg-accent rounded-lg border">
+            <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <Checkbox
-                  checked={selectedVideos.size === currentVideos.length}
+                  checked={currentVideos.length > 0 && currentVideos.every((v: any) => selectedVideos.has(v.id))}
                   onCheckedChange={toggleSelectAll}
                 />
                 <span className="text-sm font-medium">
-                  {selectedVideos.size}개 선택됨
+                  전체 선택 ({selectedVideos.size}/{filteredAndSortedVideos.length})
                 </span>
+                {selectedVideos.size > 0 && selectedVideos.size < currentVideos.length && (
+                  <span className="text-xs text-muted-foreground">
+                    (일부 선택됨)
+                  </span>
+                )}
+              </div>
+              {selectedVideos.size > 0 && (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={clearSelection}
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-4 h-4 mr-1" />
+                  선택 해제
                 </Button>
-              </div>
+              )}
+            </div>
+            {selectedVideos.size > 0 && (
               <Button
                 variant="destructive"
                 size="sm"
                 onClick={() => setShowDeleteDialog(true)}
-                disabled={selectedVideos.size === 0}
               >
                 <Trash2 className="w-4 h-4 mr-2" />
-                삭제
+                선택한 영상 삭제
               </Button>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* 영상 목록 */}
           <div className="space-y-4">

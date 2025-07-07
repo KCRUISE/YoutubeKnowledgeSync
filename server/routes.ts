@@ -262,11 +262,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "채널을 찾을 수 없습니다." });
       }
 
-      // Check if summary already exists
+      // 기존 요약이 있는 경우 삭제 (재요약 허용)
       const existingSummaries = await storage.getSummariesByChannel(video.channelId);
       const existingSummary = existingSummaries.find(s => s.videoId === videoId);
       if (existingSummary) {
-        return res.status(400).json({ message: "이미 요약이 존재합니다." });
+        await storage.deleteSummary(existingSummary.id);
       }
 
       // 진행 상태 초기화
@@ -373,11 +373,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "채널을 찾을 수 없습니다." });
       }
 
-      // Check if summary already exists
+      // 기존 요약이 있는 경우 삭제 (재요약 허용)
       const existingSummaries = await storage.getSummariesByChannel(video.channelId);
       const existingSummary = existingSummaries.find(s => s.videoId === videoId);
       if (existingSummary) {
-        return res.status(400).json({ message: "이미 요약이 존재합니다." });
+        await storage.deleteSummary(existingSummary.id);
       }
 
       // 진행 상태 초기화

@@ -655,7 +655,20 @@ export default function Videos() {
                                   )}
                                 </div>
                                 <div className="flex items-center gap-2 ml-4">
-                                  {!hasSummary(video.id) && (
+                                  {hasSummary(video.id) ? (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        createSummary(video.id);
+                                      }}
+                                      disabled={generatingVideos.has(video.id)}
+                                    >
+                                      <Sparkles className="w-4 h-4 mr-2" />
+                                      {generatingVideos.has(video.id) ? "재요약 중..." : "재요약"}
+                                    </Button>
+                                  ) : (
                                     <Button
                                       size="sm"
                                       onClick={(e) => {
@@ -719,14 +732,16 @@ export default function Videos() {
                                   </p>
                                 )}
                               </div>
-                              {hasSummary(video.id) ? (
-                                <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
-                                  <CheckCircle className="w-3 h-3 mr-1" />
-                                  요약 완료
-                                </Badge>
-                              ) : (
+                              <div className="space-y-2">
+                                {hasSummary(video.id) && (
+                                  <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
+                                    <CheckCircle className="w-3 h-3 mr-1" />
+                                    요약 완료
+                                  </Badge>
+                                )}
                                 <Button
                                   size="sm"
+                                  variant={hasSummary(video.id) ? "outline" : "default"}
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     createSummary(video.id);
@@ -735,9 +750,12 @@ export default function Videos() {
                                   className="w-full"
                                 >
                                   <Sparkles className="w-4 h-4 mr-2" />
-                                  {generatingVideos.has(video.id) ? "요약 생성 중..." : "요약 생성"}
+                                  {generatingVideos.has(video.id) 
+                                    ? (hasSummary(video.id) ? "재요약 중..." : "요약 생성 중...")
+                                    : (hasSummary(video.id) ? "재요약" : "요약 생성")
+                                  }
                                 </Button>
-                              )}
+                              </div>
                             </div>
                           </div>
                         </CardContent>
@@ -803,10 +821,24 @@ export default function Videos() {
                               </div>
                               <div className="flex items-center gap-3">
                                 {hasSummary(video.id) ? (
-                                  <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
-                                    <CheckCircle className="w-4 h-4 mr-2" />
-                                    요약 완료
-                                  </Badge>
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
+                                      <CheckCircle className="w-4 h-4 mr-2" />
+                                      요약 완료
+                                    </Badge>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        createSummary(video.id);
+                                      }}
+                                      disabled={generatingVideos.has(video.id)}
+                                    >
+                                      <Sparkles className="w-4 h-4 mr-2" />
+                                      {generatingVideos.has(video.id) ? "재요약 중..." : "재요약"}
+                                    </Button>
+                                  </div>
                                 ) : (
                                   <Button
                                     onClick={(e) => {

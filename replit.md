@@ -114,6 +114,10 @@ Three main entities with clear relationships:
   - Fixed title inconsistency between video list and summary list
   - Modified summary creation to preserve original video titles
   - Updated OpenAI prompt to maintain video title consistency
+  - Added re-summarization feature for existing summaries
+  - Modified server endpoints to allow overwriting existing summaries
+  - Enhanced UI to show re-summarize buttons for completed videos
+  - Updated all view modes (list, grid, detailed) to support re-summarization
 - July 4, 2025. Enhanced video selection and bulk operations
   - Fixed video selection issues by allowing all videos to be selected regardless of summary status
   - Modified deletion functionality to allow deletion of all videos (with or without summaries)

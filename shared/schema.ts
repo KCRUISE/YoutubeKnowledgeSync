@@ -24,6 +24,7 @@ export const videos = pgTable("videos", {
   duration: text("duration"),
   viewCount: integer("view_count"),
   url: text("url").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const summaries = pgTable("summaries", {

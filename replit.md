@@ -82,6 +82,12 @@ Three main entities with clear relationships:
 - Environment variables managed through Replit secrets
 
 ## Changelog
+- July 4, 2025. Enhanced video selection and bulk operations
+  - Fixed video selection issues by allowing all videos to be selected regardless of summary status
+  - Added bulk summary generation feature for selected videos without summaries
+  - Enhanced management bar with separate buttons for summary generation and deletion
+  - Updated selection logic to show accurate counts for each operation type
+  - Improved user experience with clear feedback for bulk operations
 - July 4, 2025. Added "New" badge display for videos fetched on the current day
   - Added createdAt field to videos table schema for tracking when videos were fetched
   - Added isNewToday() function to check if a video was fetched today

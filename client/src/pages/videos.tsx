@@ -185,18 +185,8 @@ export default function Videos() {
     );
   };
 
-  // 다중 선택 관련 함수들 (요약이 있는 영상만 선택 가능)
+  // 다중 선택 관련 함수들 (모든 영상 선택 가능)
   const toggleVideoSelection = (videoId: number) => {
-    // 요약이 없는 영상은 선택할 수 없음
-    if (!hasSummary(videoId)) {
-      toast({
-        title: "선택 불가",
-        description: "요약이 생성된 영상만 삭제할 수 있습니다.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     const newSelected = new Set(selectedVideos);
     if (newSelected.has(videoId)) {
       newSelected.delete(videoId);
@@ -207,31 +197,23 @@ export default function Videos() {
   };
 
   const toggleSelectAll = () => {
-    // 요약이 있는 영상만 선택 대상으로 함
-    const selectableVideoIds = currentVideos
-      .filter((v: any) => hasSummary(v.id))
-      .map((v: any) => v.id);
+    const allVideoIds = currentVideos.map((v: any) => v.id);
     
-    if (selectableVideoIds.length === 0) {
-      toast({
-        title: "선택 가능한 영상이 없습니다",
-        description: "요약이 생성된 영상만 삭제할 수 있습니다.",
-        variant: "destructive",
-      });
+    if (allVideoIds.length === 0) {
       return;
     }
     
-    const allSelectableSelected = selectableVideoIds.every(id => selectedVideos.has(id));
+    const allSelected = allVideoIds.every(id => selectedVideos.has(id));
     
-    if (allSelectableSelected) {
-      // 선택 가능한 모든 영상이 선택되어 있으면 해제
+    if (allSelected) {
+      // 모든 영상이 선택되어 있으면 해제
       const newSelected = new Set(selectedVideos);
-      selectableVideoIds.forEach(id => newSelected.delete(id));
+      allVideoIds.forEach(id => newSelected.delete(id));
       setSelectedVideos(newSelected);
     } else {
-      // 선택 가능한 영상들을 모두 선택
+      // 모든 영상 선택
       const newSelected = new Set(selectedVideos);
-      selectableVideoIds.forEach(id => newSelected.add(id));
+      allVideoIds.forEach(id => newSelected.add(id));
       setSelectedVideos(newSelected);
     }
   };
@@ -244,10 +226,21 @@ export default function Videos() {
   const handleBulkDelete = async () => {
     if (selectedVideos.size === 0) return;
     
-    const videosToDelete = Array.from(selectedVideos);
+    // 요약이 있는 영상만 삭제
+    const videosWithSummary = Array.from(selectedVideos).filter(videoId => hasSummary(videoId));
+    
+    if (videosWithSummary.length === 0) {
+      toast({
+        title: "삭제할 수 있는 영상이 없습니다",
+        description: "요약이 생성된 영상만 삭제할 수 있습니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
       await Promise.all(
-        videosToDelete.map(videoId => 
+        videosWithSummary.map(videoId => 
           apiRequest("DELETE", `/api/videos/${videoId}`)
         )
       );
@@ -256,7 +249,7 @@ export default function Videos() {
       queryClient.invalidateQueries({ queryKey: ["/api/summaries"] });
       
       toast({ 
-        title: `${videosToDelete.length}개의 영상이 삭제되었습니다.` 
+        title: `${videosWithSummary.length}개의 영상이 삭제되었습니다.` 
       });
       
       setSelectedVideos(new Set());
@@ -267,6 +260,56 @@ export default function Videos() {
         description: "일부 영상을 삭제하는 데 실패했습니다.",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleBulkSummary = async () => {
+    if (selectedVideos.size === 0) return;
+    
+    // 요약이 없는 영상만 요약 생성
+    const videosWithoutSummary = Array.from(selectedVideos).filter(videoId => !hasSummary(videoId));
+    
+    if (videosWithoutSummary.length === 0) {
+      toast({
+        title: "요약 생성할 영상이 없습니다",
+        description: "선택된 영상들은 모두 요약이 이미 생성되어 있습니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // 선택된 영상들의 요약 생성 시작
+    videosWithoutSummary.forEach(videoId => {
+      setGeneratingVideos(prev => new Set(prev).add(videoId));
+    });
+    
+    try {
+      await Promise.all(
+        videosWithoutSummary.map(async videoId => {
+          try {
+            await apiRequest("POST", `/api/videos/${videoId}/summary`);
+          } catch (error) {
+            console.error(`Failed to generate summary for video ${videoId}:`, error);
+          }
+        })
+      );
+      
+      queryClient.invalidateQueries({ queryKey: ["/api/summaries"] });
+      
+      toast({ 
+        title: `${videosWithoutSummary.length}개 영상의 요약 생성을 시작했습니다.`,
+        description: "요약 생성이 완료되면 알림을 받게 됩니다."
+      });
+      
+      setSelectedVideos(new Set());
+    } catch (error) {
+      toast({
+        title: "요약 생성 실패",
+        description: "일부 영상의 요약 생성에 실패했습니다.",
+        variant: "destructive",
+      });
+    } finally {
+      // 생성 상태 해제는 각각의 요약 생성이 완료될 때 처리됨
     }
   };
 
@@ -465,14 +508,11 @@ export default function Videos() {
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <Checkbox
-                  checked={
-                    currentVideos.filter((v: any) => hasSummary(v.id)).length > 0 && 
-                    currentVideos.filter((v: any) => hasSummary(v.id)).every((v: any) => selectedVideos.has(v.id))
-                  }
+                  checked={currentVideos.length > 0 && currentVideos.every((v: any) => selectedVideos.has(v.id))}
                   onCheckedChange={toggleSelectAll}
                 />
                 <span className="text-sm font-medium">
-                  전체 선택 ({selectedVideos.size}/{currentVideos.filter((v: any) => hasSummary(v.id)).length})
+                  전체 선택 ({selectedVideos.size}/{currentVideos.length})
                 </span>
                 {selectedVideos.size > 0 && selectedVideos.size < currentVideos.length && (
                   <span className="text-xs text-muted-foreground">
@@ -492,14 +532,26 @@ export default function Videos() {
               )}
             </div>
             {selectedVideos.size > 0 && (
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => setShowDeleteDialog(true)}
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                선택한 영상 삭제
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleBulkSummary}
+                  disabled={Array.from(selectedVideos).every(videoId => hasSummary(videoId))}
+                >
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  요약 생성 ({Array.from(selectedVideos).filter(videoId => !hasSummary(videoId)).length})
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setShowDeleteDialog(true)}
+                  disabled={Array.from(selectedVideos).every(videoId => !hasSummary(videoId))}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  삭제 ({Array.from(selectedVideos).filter(videoId => hasSummary(videoId)).length})
+                </Button>
+              </div>
             )}
           </div>
 
@@ -521,8 +573,6 @@ export default function Videos() {
                             <Checkbox
                               checked={selectedVideos.has(video.id)}
                               onCheckedChange={() => toggleVideoSelection(video.id)}
-                              disabled={!hasSummary(video.id)}
-                              className={!hasSummary(video.id) ? "opacity-50 cursor-not-allowed" : ""}
                             />
                             <div className="flex-1 min-w-0">
                               <div className="flex items-start justify-between">
@@ -594,8 +644,6 @@ export default function Videos() {
                             <Checkbox
                               checked={selectedVideos.has(video.id)}
                               onCheckedChange={() => toggleVideoSelection(video.id)}
-                              disabled={!hasSummary(video.id)}
-                              className={!hasSummary(video.id) ? "opacity-50 cursor-not-allowed" : ""}
                             />
                             <div className="flex-1 min-w-0">
                               <h3 className="font-medium mb-2 line-clamp-2 flex items-center gap-2">
@@ -652,8 +700,6 @@ export default function Videos() {
                             <Checkbox
                               checked={selectedVideos.has(video.id)}
                               onCheckedChange={() => toggleVideoSelection(video.id)}
-                              disabled={!hasSummary(video.id)}
-                              className={!hasSummary(video.id) ? "opacity-50 cursor-not-allowed" : ""}
                             />
                             <div className="flex-1 min-w-0">
                               <h3 className="font-medium text-xl mb-3 flex items-center gap-2">

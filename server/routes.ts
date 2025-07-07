@@ -564,6 +564,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Summary deletion route
+  app.delete("/api/summaries/:id", async (req, res) => {
+    try {
+      const summaryId = parseInt(req.params.id);
+      const success = await storage.deleteSummary(summaryId);
+      
+      if (!success) {
+        return res.status(404).json({ message: "요약을 찾을 수 없습니다." });
+      }
+      
+      res.json({ message: "요약이 삭제되었습니다." });
+    } catch (error) {
+      console.error("요약 삭제 실패:", error);
+      res.status(500).json({ message: "요약을 삭제하는 데 실패했습니다." });
+    }
+  });
+
   // Export routes
   app.get("/api/export/:summaryId", async (req, res) => {
     try {
@@ -574,12 +591,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "요약을 찾을 수 없습니다." });
       }
 
-      const video = await storage.getVideo(summary.videoId);
       const channel = await storage.getChannel(summary.channelId);
       
-      if (!video || !channel) {
-        return res.status(404).json({ message: "관련 데이터를 찾을 수 없습니다." });
+      if (!channel) {
+        return res.status(404).json({ message: "채널 정보를 찾을 수 없습니다." });
       }
+      
+      // 영상이 삭제된 경우 기본값 사용
+      const video = summary.videoId ? await storage.getVideo(summary.videoId) : null;
 
       const aiSummary = {
         title: summary.title,
@@ -593,9 +612,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const markdown = await openaiService.generateObsidianMarkdown(
         aiSummary,
-        video.url,
+        video?.url || "#",
         channel.name,
-        video.publishedAt
+        video?.publishedAt || new Date()
       );
 
       // 파일명에서 특수문자 제거 및 안전한 파일명 생성

@@ -118,6 +118,9 @@ Three main entities with clear relationships:
   - Modified server endpoints to allow overwriting existing summaries
   - Enhanced UI to show re-summarize buttons for completed videos
   - Updated all view modes (list, grid, detailed) to support re-summarization
+  - Fixed summary deletion error by correcting API request parameter order
+  - Added missing summary deletion endpoint on server
+  - Enhanced export functionality to handle deleted videos gracefully
 - July 4, 2025. Enhanced video selection and bulk operations
   - Fixed video selection issues by allowing all videos to be selected regardless of summary status
   - Modified deletion functionality to allow deletion of all videos (with or without summaries)

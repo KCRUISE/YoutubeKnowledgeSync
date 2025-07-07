@@ -223,7 +223,7 @@ export default function Summaries() {
       
       await Promise.all(
         summaryIds.map(summaryId => 
-          apiRequest(`/api/summaries/${summaryId}`, "DELETE")
+          apiRequest("DELETE", `/api/summaries/${summaryId}`)
         )
       );
       

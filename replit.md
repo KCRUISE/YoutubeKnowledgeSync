@@ -111,6 +111,9 @@ Three main entities with clear relationships:
   - Updated database schema to allow summary preservation when videos are deleted
   - Modified all summary query methods to handle deleted videos gracefully
   - Added fallback display values for summaries of deleted videos ("삭제된 영상")
+  - Fixed title inconsistency between video list and summary list
+  - Modified summary creation to preserve original video titles
+  - Updated OpenAI prompt to maintain video title consistency
 - July 4, 2025. Enhanced video selection and bulk operations
   - Fixed video selection issues by allowing all videos to be selected regardless of summary status
   - Modified deletion functionality to allow deletion of all videos (with or without summaries)

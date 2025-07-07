@@ -326,7 +326,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await storage.createSummary({
             videoId: video.id,
             channelId: video.channelId,
-            title: aiSummary.title,
+            title: video.title, // 원본 영상 제목 사용
             content: aiSummary.content,
             keyPoints: aiSummary.keyPoints,
             tags: aiSummary.tags,
@@ -437,7 +437,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const summaryData = {
             videoId: video.id,
             channelId: video.channelId,
-            title: aiSummary.title,
+            title: video.title, // 원본 영상 제목 사용
             content: aiSummary.content,
             coreTheme: aiSummary.coreTheme,
             keyPoints: aiSummary.keyPoints,

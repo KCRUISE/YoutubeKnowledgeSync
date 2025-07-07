@@ -32,8 +32,8 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { insertChannelSchema } from "@shared/schema";
 
 const formSchema = insertChannelSchema.extend({
-  channelUrl: z.string().url("유효한 URL을 입력해주세요").refine(
-    (url) => url.includes("youtube.com"),
+  channelUrl: z.string().min(1, "유효한 YouTube URL을 입력해주세요").refine(
+    (url) => url.includes("youtube.com") || url.includes("youtu.be"),
     "YouTube 채널 URL을 입력해주세요"
   ),
 });

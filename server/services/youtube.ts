@@ -143,11 +143,11 @@ export class YouTubeService {
       const patterns = [
         // Direct channel ID format
         { pattern: /youtube\.com\/channel\/([a-zA-Z0-9_-]+)/, isChannelId: true },
-        // Handle format (@username)
-        { pattern: /youtube\.com\/@([a-zA-Z0-9_.-]+)/, isChannelId: false },
-        // Legacy custom URL formats
-        { pattern: /youtube\.com\/c\/([a-zA-Z0-9_.-]+)/, isChannelId: false },
-        { pattern: /youtube\.com\/user\/([a-zA-Z0-9_.-]+)/, isChannelId: false },
+        // Handle format (@username) - support Unicode characters for international usernames
+        { pattern: /youtube\.com\/@([^\s\/]+)/, isChannelId: false },
+        // Legacy custom URL formats - support Unicode characters
+        { pattern: /youtube\.com\/c\/([^\s\/]+)/, isChannelId: false },
+        { pattern: /youtube\.com\/user\/([^\s\/]+)/, isChannelId: false },
       ];
 
       for (const { pattern, isChannelId } of patterns) {

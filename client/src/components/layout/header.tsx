@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Plus, Search, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { ProgressMonitor } from "@/components/progress-monitor";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 interface HeaderProps {
   title: string;
@@ -57,6 +58,8 @@ export function Header({ title, subtitle, onAddChannel, onSearch, onRefresh }: H
               채널 추가
             </Button>
           )}
+          
+          <ThemeToggle />
         </div>
       </div>
     </header>

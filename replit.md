@@ -82,6 +82,13 @@ Three main entities with clear relationships:
 - Environment variables managed through Replit secrets
 
 ## Changelog
+- July 7, 2025. Added Korean channel support and theme toggle functionality
+  - Enhanced YouTube URL parsing to support international characters including Korean usernames
+  - Added light/dark mode toggle with system preference detection
+  - Implemented theme persistence using localStorage
+  - Added theme toggle button in header with dropdown menu (light/dark/system)
+  - Modified regex patterns to support Unicode characters in channel URLs
+  - Improved URL validation for better international YouTube channel compatibility
 - July 7, 2025. Added progress monitoring and enhanced settings management
   - Implemented real-time progress monitoring modal with activity tracking and status updates
   - Added comprehensive settings management with state persistence and validation

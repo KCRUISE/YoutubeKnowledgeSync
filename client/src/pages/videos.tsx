@@ -226,21 +226,12 @@ export default function Videos() {
   const handleBulkDelete = async () => {
     if (selectedVideos.size === 0) return;
     
-    // 요약이 있는 영상만 삭제
-    const videosWithSummary = Array.from(selectedVideos).filter(videoId => hasSummary(videoId));
-    
-    if (videosWithSummary.length === 0) {
-      toast({
-        title: "삭제할 수 있는 영상이 없습니다",
-        description: "요약이 생성된 영상만 삭제할 수 있습니다.",
-        variant: "destructive",
-      });
-      return;
-    }
+    // 선택된 모든 영상 삭제
+    const videosToDelete = Array.from(selectedVideos);
     
     try {
       await Promise.all(
-        videosWithSummary.map(videoId => 
+        videosToDelete.map(videoId => 
           apiRequest("DELETE", `/api/videos/${videoId}`)
         )
       );
@@ -249,7 +240,7 @@ export default function Videos() {
       queryClient.invalidateQueries({ queryKey: ["/api/summaries"] });
       
       toast({ 
-        title: `${videosWithSummary.length}개의 영상이 삭제되었습니다.` 
+        title: `${videosToDelete.length}개의 영상이 삭제되었습니다.` 
       });
       
       setSelectedVideos(new Set());
@@ -562,10 +553,10 @@ export default function Videos() {
                 variant="destructive"
                 size="sm"
                 onClick={() => setShowDeleteDialog(true)}
-                disabled={selectedVideos.size === 0 || Array.from(selectedVideos).filter(videoId => hasSummary(videoId)).length === 0}
+                disabled={selectedVideos.size === 0}
               >
                 <Trash2 className="w-4 h-4 mr-2" />
-                삭제 ({selectedVideos.size > 0 ? Array.from(selectedVideos).filter(videoId => hasSummary(videoId)).length : 0})
+                삭제 ({selectedVideos.size})
               </Button>
             </div>
           </div>
@@ -831,11 +822,11 @@ export default function Videos() {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>요약된 영상 삭제 확인</AlertDialogTitle>
+            <AlertDialogTitle>영상 삭제 확인</AlertDialogTitle>
             <AlertDialogDescription>
-              선택한 {selectedVideos.size}개의 영상과 관련 요약을 삭제하시겠습니까?
+              선택한 {selectedVideos.size}개의 영상을 삭제하시겠습니까?
               <br />
-              영상과 함께 생성된 요약도 모두 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
+              요약이 있는 영상의 경우 요약도 함께 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

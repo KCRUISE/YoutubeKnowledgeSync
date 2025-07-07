@@ -245,6 +245,118 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // 비디오 요약 생성 API (클라이언트가 기대하는 엔드포인트)
+  app.post("/api/videos/:videoId/summary", async (req, res) => {
+    const progressId = `summary_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    try {
+      const videoId = parseInt(req.params.videoId);
+      const video = await storage.getVideo(videoId);
+      
+      if (!video) {
+        return res.status(404).json({ message: "비디오를 찾을 수 없습니다." });
+      }
+
+      const channel = await storage.getChannel(video.channelId);
+      if (!channel) {
+        return res.status(404).json({ message: "채널을 찾을 수 없습니다." });
+      }
+
+      // Check if summary already exists
+      const existingSummaries = await storage.getSummariesByChannel(video.channelId);
+      const existingSummary = existingSummaries.find(s => s.videoId === videoId);
+      if (existingSummary) {
+        return res.status(400).json({ message: "이미 요약이 존재합니다." });
+      }
+
+      // 진행 상태 초기화
+      const controller = new AbortController();
+      const progressItem: ProgressItem = {
+        id: progressId,
+        videoId: video.id,
+        videoTitle: video.title,
+        channelName: channel.name,
+        status: 'processing',
+        progress: 0,
+        startTime: new Date().toISOString(),
+        controller
+      };
+      progressStore.set(progressId, progressItem);
+
+      // 즉시 응답하여 클라이언트가 차단되지 않도록 함
+      res.status(202).json({ message: "요약 생성이 시작되었습니다.", progressId });
+
+      // 백그라운드에서 요약 생성 실행
+      (async () => {
+        try {
+          // 진행률 업데이트 - 트랜스크립트 가져오기
+          progressItem.progress = 25;
+          progressStore.set(progressId, { ...progressItem });
+
+          const transcript = await youtubeService.getVideoTranscript(video.videoId);
+          
+          if (controller.signal.aborted) {
+            progressItem.status = 'cancelled';
+            progressItem.endTime = new Date().toISOString();
+            progressStore.set(progressId, { ...progressItem });
+            return;
+          }
+
+          // 진행률 업데이트 - AI 요약 생성
+          progressItem.progress = 50;
+          progressStore.set(progressId, { ...progressItem });
+
+          const aiSummary = await openaiService.summarizeVideo(
+            video.title,
+            video.description || "",
+            transcript || undefined
+          );
+
+          if (controller.signal.aborted) {
+            progressItem.status = 'cancelled';
+            progressItem.endTime = new Date().toISOString();
+            progressStore.set(progressId, { ...progressItem });
+            return;
+          }
+
+          // 진행률 업데이트 - 데이터베이스 저장
+          progressItem.progress = 75;
+          progressStore.set(progressId, { ...progressItem });
+
+          await storage.createSummary({
+            videoId: video.id,
+            channelId: video.channelId,
+            title: aiSummary.title,
+            content: aiSummary.content,
+            keyPoints: aiSummary.keyPoints,
+            tags: aiSummary.tags,
+            sections: JSON.stringify(aiSummary.sections),
+            insights: aiSummary.insights,
+            coreTheme: aiSummary.coreTheme,
+          });
+
+          // 완료 처리
+          progressItem.status = 'completed';
+          progressItem.progress = 100;
+          progressItem.endTime = new Date().toISOString();
+          progressStore.set(progressId, { ...progressItem });
+          
+        } catch (error) {
+          console.error("요약 생성 실패:", error);
+          progressItem.status = 'failed';
+          progressItem.error = error instanceof Error ? error.message : '알 수 없는 오류';
+          progressItem.endTime = new Date().toISOString();
+          progressStore.set(progressId, { ...progressItem });
+        }
+      })();
+
+    } catch (error) {
+      console.error("요약 생성 초기화 실패:", error);
+      res.status(500).json({ message: "요약 생성을 시작하는 데 실패했습니다." });
+    }
+  });
+
+  // 기존 엔드포인트 (호환성을 위해 유지)
   app.post("/api/summaries/:videoId", async (req, res) => {
     const progressId = `summary_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     

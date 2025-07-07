@@ -100,6 +100,10 @@ Three main entities with clear relationships:
   - Added refresh button to summary list for manual data updates
   - Removed redundant search input from summary page filter section
   - Improved user experience with centralized search and refresh controls
+  - Fixed bulk summary generation progress tracking issues
+  - Added proper API endpoint `/api/videos/:videoId/summary` for video summary generation
+  - Enhanced bulk summary creation with better error handling and progress monitoring
+  - Improved progress store synchronization for multiple simultaneous summary generation
 - July 4, 2025. Enhanced video selection and bulk operations
   - Fixed video selection issues by allowing all videos to be selected regardless of summary status
   - Modified deletion functionality to allow deletion of all videos (with or without summaries)

@@ -120,7 +120,7 @@ export default function Videos() {
     setGeneratingVideos(prev => new Set(prev).add(videoId));
     
     try {
-      await apiRequest("POST", `/api/summaries/${videoId}`);
+      await apiRequest("POST", `/api/videos/${videoId}/summary`);
       
       // 백그라운드에서 처리되므로 즉시 완료 메시지를 표시하지 않음
       toast({
@@ -283,32 +283,49 @@ export default function Videos() {
     });
     
     try {
-      await Promise.all(
+      // 각 영상에 대해 순차적으로 요약 생성 시작 (진행상태 추적을 위해)
+      const results = await Promise.allSettled(
         videosWithoutSummary.map(async videoId => {
           try {
-            await apiRequest("POST", `/api/videos/${videoId}/summary`);
+            const response = await apiRequest("POST", `/api/videos/${videoId}/summary`);
+            return { videoId, success: true, response };
           } catch (error) {
             console.error(`Failed to generate summary for video ${videoId}:`, error);
+            return { videoId, success: false, error };
           }
         })
       );
       
+      // 성공한 요약 생성 작업 수 계산
+      const successCount = results.filter(result => 
+        result.status === 'fulfilled' && result.value.success
+      ).length;
+      
+      // 진행상태와 요약 목록 갱신
+      queryClient.invalidateQueries({ queryKey: ['/api/progress'] });
       queryClient.invalidateQueries({ queryKey: ["/api/summaries"] });
       
       toast({ 
-        title: `${videosWithoutSummary.length}개 영상의 요약 생성을 시작했습니다.`,
-        description: "요약 생성이 완료되면 알림을 받게 됩니다."
+        title: `${successCount}개 영상의 요약 생성을 시작했습니다.`,
+        description: "진행상태 모니터에서 요약 생성 진행 상황을 확인할 수 있습니다."
       });
       
       setSelectedVideos(new Set());
     } catch (error) {
       toast({
         title: "요약 생성 실패",
-        description: "일부 영상의 요약 생성에 실패했습니다.",
+        description: "요약 생성 시작 중 오류가 발생했습니다.",
         variant: "destructive",
       });
     } finally {
-      // 생성 상태 해제는 각각의 요약 생성이 완료될 때 처리됨
+      // 모든 영상의 생성 상태 초기화
+      videosWithoutSummary.forEach(videoId => {
+        setGeneratingVideos(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(videoId);
+          return newSet;
+        });
+      });
     }
   };
 

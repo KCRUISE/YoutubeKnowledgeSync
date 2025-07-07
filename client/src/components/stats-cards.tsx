@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
-import { Tv, FileText, TrendingUp, Zap } from "lucide-react";
+import { Tv, FileText, TrendingUp, PlayCircle } from "lucide-react";
 
 interface Stats {
   totalChannels: number;
+  totalVideos: number;
   totalSummaries: number;
   newThisWeek: number;
   apiUsage: number;
@@ -18,14 +19,9 @@ export function StatsCards() {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[...Array(4)].map((_, i) => (
-          <Card key={i} className="stat-card">
-            <CardContent className="p-6">
-              <div className="animate-pulse">
-                <div className="h-4 bg-muted rounded w-1/2 mb-2"></div>
-                <div className="h-8 bg-muted rounded w-1/3"></div>
-              </div>
-            </CardContent>
-          </Card>
+          <div key={i} className="animate-pulse">
+            <div className="h-32 bg-muted rounded-lg"></div>
+          </div>
         ))}
       </div>
     );
@@ -40,6 +36,13 @@ export function StatsCards() {
       iconColor: "text-primary",
     },
     {
+      title: "등록된 영상",
+      value: stats?.totalVideos || 0,
+      icon: PlayCircle,
+      bgColor: "bg-orange-100 dark:bg-orange-950",
+      iconColor: "text-orange-600",
+    },
+    {
       title: "총 요약 수",
       value: stats?.totalSummaries || 0,
       icon: FileText,
@@ -52,14 +55,7 @@ export function StatsCards() {
       icon: TrendingUp,
       bgColor: "bg-purple-100 dark:bg-purple-950",
       iconColor: "text-secondary",
-    },
-    {
-      title: "API 사용량",
-      value: `${stats?.apiUsage || 0}%`,
-      icon: Zap,
-      bgColor: "bg-orange-100 dark:bg-orange-950",
-      iconColor: "text-orange-500",
-    },
+    }
   ];
 
   return (

@@ -32,6 +32,7 @@ export interface IStorage {
   // Stats
   getStats(): Promise<{
     totalChannels: number;
+    totalVideos: number;
     totalSummaries: number;
     newThisWeek: number;
     apiUsage: number;
@@ -253,6 +254,7 @@ export class MemStorage implements IStorage {
 
     return {
       totalChannels: this.channels.size,
+      totalVideos: this.videos.size,
       totalSummaries: this.summaries.size,
       newThisWeek,
       apiUsage: Math.floor(Math.random() * 100), // Mock API usage percentage
@@ -544,6 +546,7 @@ export class DatabaseStorage implements IStorage {
 
   async getStats(): Promise<{
     totalChannels: number;
+    totalVideos: number;
     totalSummaries: number;
     newThisWeek: number;
     apiUsage: number;
@@ -553,6 +556,10 @@ export class DatabaseStorage implements IStorage {
     const [channelCount] = await db
       .select({ count: sql<number>`count(*)` })
       .from(channels);
+
+    const [videoCount] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(videos);
 
     const [summaryCount] = await db
       .select({ count: sql<number>`count(*)` })
@@ -565,6 +572,7 @@ export class DatabaseStorage implements IStorage {
 
     return {
       totalChannels: channelCount.count,
+      totalVideos: videoCount.count,
       totalSummaries: summaryCount.count,
       newThisWeek: newThisWeekCount.count,
       apiUsage: summaryCount.count, // Using summary count as API usage approximation

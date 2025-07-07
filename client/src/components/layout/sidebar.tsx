@@ -13,11 +13,11 @@ import {
   PlayCircle
 } from "lucide-react";
 
-const getNavigation = (stats: any, videoCount: number, summaryCount: number) => [
+const getNavigation = (stats: any) => [
   { name: "대시보드", href: "/", icon: Home },
   { name: "채널 관리", href: "/channels", icon: Tv, count: stats?.totalChannels },
-  { name: "영상 목록", href: "/videos", icon: PlayCircle, count: videoCount },
-  { name: "요약 목록", href: "/summaries", icon: FileText, count: summaryCount },
+  { name: "영상 목록", href: "/videos", icon: PlayCircle, count: stats?.totalVideos },
+  { name: "요약 목록", href: "/summaries", icon: FileText, count: stats?.totalSummaries },
   { name: "설정", href: "/settings", icon: Settings },
 ];
 
@@ -70,7 +70,7 @@ export function Sidebar() {
       {/* Navigation */}
       <nav className="flex-1 p-4">
         <ul className="space-y-2">
-          {getNavigation(stats, videos?.length || 0, summaries?.length || 0).map((item) => {
+          {getNavigation(stats).map((item) => {
             const isActive = location === item.href;
             return (
               <li key={item.name}>

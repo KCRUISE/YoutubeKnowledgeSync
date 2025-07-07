@@ -82,6 +82,12 @@ Three main entities with clear relationships:
 - Environment variables managed through Replit secrets
 
 ## Changelog
+- July 7, 2025. Fixed video count display and improved statistics accuracy
+  - Added totalVideos field to statistics API and database queries
+  - Fixed sidebar navigation to display correct video counts from stats API
+  - Updated dashboard statistics cards to include video count display
+  - Modified storage interface to include video count in stats calculations
+  - Enhanced statistics consistency across all UI components
 - July 7, 2025. Added Korean channel support and theme toggle functionality
   - Enhanced YouTube URL parsing to support international characters including Korean usernames
   - Added light/dark mode toggle with system preference detection

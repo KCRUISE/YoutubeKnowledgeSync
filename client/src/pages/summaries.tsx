@@ -245,6 +245,7 @@ export default function Summaries() {
       );
       
       await queryClient.invalidateQueries({ queryKey: ["/api/summaries"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
       
       toast({
         title: "요약 삭제 완료",

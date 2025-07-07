@@ -26,6 +26,9 @@ export default function Channels() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/channels"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/videos"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/summaries"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
       toast({ title: "채널이 삭제되었습니다." });
     },
     onError: (error) => {
@@ -43,6 +46,8 @@ export default function Channels() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/channels"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/videos"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
       toast({ title: "비디오를 성공적으로 가져왔습니다." });
     },
     onError: (error) => {
@@ -60,6 +65,7 @@ export default function Channels() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/channels"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
       toast({ title: "채널 정보가 업데이트되었습니다." });
     },
     onError: (error) => {
@@ -77,6 +83,8 @@ export default function Channels() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/channels"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/videos"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
       toast({ title: "모든 채널에서 새영상을 성공적으로 가져왔습니다." });
     },
     onError: (error) => {

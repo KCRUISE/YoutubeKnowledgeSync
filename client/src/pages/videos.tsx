@@ -246,6 +246,7 @@ export default function Videos() {
       
       queryClient.invalidateQueries({ queryKey: ["/api/videos"] });
       queryClient.invalidateQueries({ queryKey: ["/api/summaries"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
       
       toast({ 
         title: `${videosToDelete.length}개의 영상이 삭제되었습니다.` 
@@ -304,6 +305,7 @@ export default function Videos() {
       // 진행상태와 요약 목록 갱신
       queryClient.invalidateQueries({ queryKey: ['/api/progress'] });
       queryClient.invalidateQueries({ queryKey: ["/api/summaries"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
       
       toast({ 
         title: `${successCount}개 영상의 요약 생성을 시작했습니다.`,

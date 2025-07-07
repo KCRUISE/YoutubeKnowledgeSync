@@ -13,11 +13,11 @@ import {
   PlayCircle
 } from "lucide-react";
 
-const getNavigation = (stats: any, videoCount: number) => [
+const getNavigation = (stats: any, videoCount: number, summaryCount: number) => [
   { name: "대시보드", href: "/", icon: Home },
   { name: "채널 관리", href: "/channels", icon: Tv, count: stats?.totalChannels },
   { name: "영상 목록", href: "/videos", icon: PlayCircle, count: videoCount },
-  { name: "요약 목록", href: "/summaries", icon: FileText, count: stats?.totalSummaries },
+  { name: "요약 목록", href: "/summaries", icon: FileText, count: summaryCount },
   { name: "설정", href: "/settings", icon: Settings },
 ];
 
@@ -28,14 +28,21 @@ export function Sidebar() {
   const { data: stats } = useQuery({
     queryKey: ["/api/stats"],
     queryFn: getQueryFn({ on401: "returnNull" }),
-    staleTime: 30000, // 30초 동안 캐시 유지
+    refetchInterval: 3000, // 3초마다 갱신
   });
 
   // 영상 목록 조회
   const { data: videos } = useQuery({
     queryKey: ["/api/videos"],
     queryFn: getQueryFn({ on401: "returnNull" }),
-    staleTime: 30000,
+    refetchInterval: 3000, // 3초마다 갱신
+  });
+
+  // 요약 목록 조회
+  const { data: summaries } = useQuery({
+    queryKey: ["/api/summaries"],
+    queryFn: getQueryFn({ on401: "returnNull" }),
+    refetchInterval: 3000, // 3초마다 갱신
   });
 
   const handleMenuClick = (href: string) => {
@@ -63,7 +70,7 @@ export function Sidebar() {
       {/* Navigation */}
       <nav className="flex-1 p-4">
         <ul className="space-y-2">
-          {getNavigation(stats, videos?.length || 0).map((item) => {
+          {getNavigation(stats, videos?.length || 0, summaries?.length || 0).map((item) => {
             const isActive = location === item.href;
             return (
               <li key={item.name}>

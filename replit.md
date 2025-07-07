@@ -92,9 +92,10 @@ Three main entities with clear relationships:
   - Enhanced YouTube URL parsing to support international characters including Korean usernames
   - Added light/dark mode toggle with system preference detection
   - Implemented theme persistence using localStorage
-  - Added theme toggle button in header with dropdown menu (light/dark/system)
+  - Added simple one-click theme toggle button in header (light/dark mode)
   - Modified regex patterns to support Unicode characters in channel URLs
   - Improved URL validation for better international YouTube channel compatibility
+  - Simplified theme toggle to single click instead of dropdown menu
 - July 7, 2025. Added progress monitoring and enhanced settings management
   - Implemented real-time progress monitoring modal with activity tracking and status updates
   - Added comprehensive settings management with state persistence and validation

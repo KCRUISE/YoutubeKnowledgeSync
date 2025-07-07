@@ -82,12 +82,13 @@ Three main entities with clear relationships:
 - Environment variables managed through Replit secrets
 
 ## Changelog
-- July 7, 2025. Restored previous video summarization format
-  - Reverted to original lilys.ai-style summary format based on user feedback
-  - Maintained structured analysis with core theme, content, sections, and insights
-  - Restored balanced approach between comprehensiveness and readability
+- July 7, 2025. Enhanced video summarization with lilys.ai-style core content analysis
+  - Improved content section to match lilys.ai's structured summary format
+  - Added structured "핵심 내용 요약" with main topic, key arguments, and conclusion
+  - Enhanced prompt to generate 3-4 clear main points with background and examples
+  - Maintained lilys.ai-style professional analysis while improving content structure
   - Kept JSON object response format for consistent data structure
-  - Preserved professional analysis quality while improving usability
+  - Preserved balanced approach between comprehensiveness and readability
 - July 7, 2025. Fixed video count display and improved statistics accuracy
   - Added totalVideos field to statistics API and database queries
   - Fixed sidebar navigation to display correct video counts from stats API

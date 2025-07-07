@@ -82,17 +82,12 @@ Three main entities with clear relationships:
 - Environment variables managed through Replit secrets
 
 ## Changelog
-- July 7, 2025. Enhanced video summarization with comprehensive content analysis
-  - Improved OpenAI prompt to generate detailed, structured summaries
-  - Enhanced summary quality with 5-8 sentence comprehensive overviews
-  - Added 7-10 specific key points for better content understanding
-  - Implemented detailed section-by-section analysis with logical structure
-  - Increased tag count to 8-12 relevant keywords for better categorization
-  - Added 5-7 practical insights and learning points for actionable takeaways
-  - Enhanced core theme identification for clear message extraction
-  - Improved prompt engineering for lilys.ai-level professional analysis
-  - Increased max tokens to 3000 for more detailed content generation
-  - Enhanced system prompt for expert-level content analysis
+- July 7, 2025. Restored previous video summarization format
+  - Reverted to original lilys.ai-style summary format based on user feedback
+  - Maintained structured analysis with core theme, content, sections, and insights
+  - Restored balanced approach between comprehensiveness and readability
+  - Kept JSON object response format for consistent data structure
+  - Preserved professional analysis quality while improving usability
 - July 7, 2025. Fixed video count display and improved statistics accuracy
   - Added totalVideos field to statistics API and database queries
   - Fixed sidebar navigation to display correct video counts from stats API

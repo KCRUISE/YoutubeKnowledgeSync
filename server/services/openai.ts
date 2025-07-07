@@ -25,72 +25,81 @@ export interface SummarySection {
 export class OpenAIService {
   async summarizeVideo(videoTitle: string, videoDescription: string, transcript?: string): Promise<VideoSummary> {
     try {
-      const content = transcript || videoDescription || videoTitle;
-      
       const prompt = `
-다음 YouTube 비디오의 내용을 lilys.ai 스타일의 고품질 요약으로 변환해주세요. 전문적이고 체계적인 분석을 제공하세요.
+다음 YouTube 영상을 전문적이고 포괄적으로 분석하고 요약해주세요. lilys.ai 수준의 깊이 있는 분석을 제공해주세요:
 
-비디오 제목: ${videoTitle}
-비디오 설명: ${videoDescription}
-${transcript ? `스크립트: ${transcript}` : ''}
+제목: ${videoTitle}
+설명: ${videoDescription}
+${transcript ? `전사 텍스트: ${transcript}` : ''}
 
-다음 JSON 형식으로 응답해주세요:
+다음 형식으로 한국어로 응답해주세요:
+
+1. **핵심 내용 요약**: 영상의 전체 내용을 5-8문장으로 상세하게 요약
+2. **주요 포인트**: 핵심 내용을 7-10개의 구체적인 포인트로 정리
+3. **섹션별 상세 내용**: 영상을 논리적 구조로 나누어 각 섹션을 상세히 설명
+4. **태그**: 관련 키워드 8-12개 (기술, 분야, 개념 등)
+5. **핵심 인사이트**: 영상에서 얻을 수 있는 중요한 통찰과 학습 포인트 5-7개
+6. **핵심 주제**: 영상의 핵심 메시지를 한 문장으로 명확히 표현
+
+각 섹션은 구체적이고 실용적인 내용으로 작성하며, 전문가 수준의 분석을 제공해주세요.
+영상의 맥락, 배경지식, 실무 적용 방안 등을 포함하여 종합적으로 분석해주세요.
+
+JSON 형식으로 응답해주세요:
 {
-  "title": "원본 영상 제목과 동일하게 유지: ${videoTitle}",
-  "coreTheme": "이 콘텐츠의 핵심 테마를 한 문장으로 요약 (예: '인공지능의 미래와 창작 경제에 미치는 영향을 논의하며, 안전성과 윤리적 고려사항의 중요성을 강조')",
-  "content": "전체적인 요약 내용 (마크다운 형식, 구조화된 문단으로 작성)",
+  "title": "${videoTitle}",
+  "content": "핵심 내용 요약 (5-8문장의 상세한 요약)",
+  "keyPoints": ["구체적인 포인트1", "구체적인 포인트2", "구체적인 포인트3", "구체적인 포인트4", "구체적인 포인트5", "구체적인 포인트6", "구체적인 포인트7"],
   "sections": [
     {
       "title": "섹션 제목",
-      "timestamp": "예상 시간대 (예: 0:00-5:30)",
-      "content": "해당 섹션의 상세 내용",
+      "timestamp": "시간대 (추정)",
+      "content": "섹션별 상세 내용 (3-5문장)",
       "keyWords": ["핵심키워드1", "핵심키워드2", "핵심키워드3"]
     }
   ],
-  "keyPoints": ["• 구체적이고 실행 가능한 핵심 포인트들", "• 중요한 인사이트나 팁", "• 기억해야 할 주요 개념들"],
-  "insights": ["깊이 있는 분석이나 통찰", "비판적 사고나 다각적 관점", "실무적 적용 방안"],
-  "tags": ["#주제분야", "#구체적키워드", "#활용영역", "#대상독자"]
+  "tags": ["태그1", "태그2", "태그3", "태그4", "태그5", "태그6", "태그7", "태그8"],
+  "insights": ["실용적 인사이트1", "전문가 관점 인사이트2", "학습 포인트3", "적용 방안4", "핵심 통찰5"],
+  "coreTheme": "영상의 핵심 메시지와 주제"
 }
-
-요약 시 다음 사항을 준수하세요:
-- **볼드체**로 핵심 개념과 중요한 용어 강조
-- 섹션별로 논리적 흐름을 유지하며 구성
-- 실무진이 활용할 수 있는 구체적 인사이트 제공
-- 전문성과 접근성의 균형을 맞춘 설명
-- 태그는 실제 검색과 분류에 유용하도록 구성
-- 각 섹션은 3-5개의 핵심 키워드로 정리
-`;
+      `;
 
       const response = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: 'gpt-4o',
         messages: [
           {
-            role: "system",
-            content: "You are an expert content analyst specializing in creating high-quality, structured summaries similar to lilys.ai. Focus on creating professional, actionable insights with clear organization and meaningful categorization."
+            role: 'system',
+            content: '당신은 YouTube 영상 분석 전문가입니다. lilys.ai 수준의 깊이 있고 구조화된 분석을 제공합니다. 영상의 내용을 포괄적으로 분석하고, 실무에 적용할 수 있는 인사이트와 함께 전문가 수준의 요약을 작성합니다. 각 섹션은 구체적이고 실용적인 내용으로 작성하며, 단순한 요약이 아닌 깊이 있는 분석을 제공합니다.'
           },
           {
-            role: "user",
+            role: 'user',
             content: prompt
           }
         ],
-        response_format: { type: "json_object" },
-        temperature: 0.3, // 더 일관성 있는 구조를 위해 낮춤
+        temperature: 0.3,
+        max_tokens: 3000,
       });
 
-      const result = JSON.parse(response.choices[0].message.content || "{}");
+      const summaryText = response.choices[0].message.content;
       
-      return {
-        title: result.title || videoTitle,
-        coreTheme: result.coreTheme || "이 콘텐츠의 핵심 주제를 분석합니다.",
-        content: result.content || "요약을 생성할 수 없습니다.",
-        sections: result.sections || [],
-        keyPoints: result.keyPoints || [],
-        insights: result.insights || [],
-        tags: result.tags || [],
-      };
+      try {
+        const summary = JSON.parse(summaryText || '{}');
+        return summary;
+      } catch (parseError) {
+        console.error('JSON 파싱 오류:', parseError);
+        // JSON 파싱 실패 시 기본 구조로 반환
+        return {
+          title: videoTitle,
+          content: summaryText || '요약 생성 중 오류가 발생했습니다.',
+          keyPoints: [],
+          sections: [],
+          tags: [],
+          insights: [],
+          coreTheme: '영상 분석'
+        };
+      }
     } catch (error) {
-      console.error("OpenAI 요약 생성 실패:", error);
-      throw new Error("AI 요약 생성에 실패했습니다. API 키와 요청 한도를 확인해주세요.");
+      console.error('영상 요약 생성 중 오류:', error);
+      throw error;
     }
   }
 
@@ -98,90 +107,57 @@ ${transcript ? `스크립트: ${transcript}` : ''}
     const formattedDate = publishedDate.toISOString().split('T')[0];
     const currentDate = new Date().toISOString().split('T')[0];
     const tags = summary.tags.map(tag => tag.startsWith('#') ? tag : `#${tag}`).join(' ');
-    
-    let markdown = `---
+
+    const sectionsMarkdown = summary.sections.map(section => {
+      const keywords = section.keyWords.map(kw => `\`${kw}\``).join(', ');
+      return `### ${section.title}${section.timestamp ? ` (${section.timestamp})` : ''}
+
+${section.content}
+
+**핵심 키워드**: ${keywords}
+`;
+    }).join('\n');
+
+    const keyPointsMarkdown = summary.keyPoints.map(point => `- ${point}`).join('\n');
+    const insightsMarkdown = summary.insights.map(insight => `- ${insight}`).join('\n');
+
+    return `---
 title: "${summary.title}"
+date: ${currentDate}
+published: ${formattedDate}
 channel: "${channelName}"
-date: "${formattedDate}"
-created: "${currentDate}"
-tags: [${summary.tags.map(tag => `"${tag}"`).join(', ')}]
-type: "video-summary"
 url: "${videoUrl}"
+tags: [${summary.tags.map(tag => `"${tag}"`).join(', ')}]
 ---
 
 # ${summary.title}
 
-## 📺 영상 정보
-
-| 항목 | 내용 |
-|------|------|
-| **채널** | ${channelName} |
-| **게시일** | ${formattedDate} |
-| **링크** | [영상 보기](${videoUrl}) |
-| **요약 생성일** | ${currentDate} |
-
-## 🎯 핵심 테마
-
-> ${summary.coreTheme}
-
-## 💡 핵심 포인트
-
-${summary.keyPoints.map(point => `- ${point}`).join('\n')}
-
-## 📋 주요 내용
+## 📋 요약
 
 ${summary.content}
 
-## 💡 주요 인사이트
+## 🎯 핵심 포인트
 
-${summary.insights.map(insight => `- ${insight}`).join('\n')}
+${keyPointsMarkdown}
+
+## 📚 섹션별 내용
+
+${sectionsMarkdown}
+
+## 💡 핵심 인사이트
+
+${insightsMarkdown}
+
+## 🎭 핵심 주제
+
+${summary.coreTheme}
+
+---
+
+**출처**: [${channelName}](${videoUrl})  
+**발행일**: ${formattedDate}  
+**분석일**: ${currentDate}  
+**태그**: ${tags}
 `;
-
-    // 섹션별 상세 내용 추가
-    if (summary.sections && summary.sections.length > 0) {
-      markdown += `\n## 📑 섹션별 분석\n\n`;
-      
-      summary.sections.forEach((section, index) => {
-        markdown += `### ${index + 1}. ${section.title}`;
-        if (section.timestamp) {
-          markdown += ` ${section.timestamp}`;
-        }
-        markdown += `\n\n`;
-        
-        // 키워드 표시
-        if (section.keyWords && section.keyWords.length > 0) {
-          const keywordTags = section.keyWords.map(word => `\`${word}\``).join(' ');
-          markdown += `**핵심 키워드**: ${keywordTags}\n\n`;
-        }
-        
-        markdown += `${section.content}\n\n`;
-      });
-    }
-
-    markdown += `
-
-## 🏷️ 태그
-
-${summary.tags.map(tag => `#${tag.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9가-힣_]/g, '')}`).join(' ')}
-
----
-
-## 📌 메모
-
-*이곳에 개인적인 생각이나 추가 메모를 작성하세요.*
-
----
-
-## 🔗 연관 항목
-
-- [[${channelName}]] 채널의 다른 콘텐츠
-- [[YouTube 요약 모음]]
-
----
-
-**📝 자동 생성된 요약** | **🤖 AI 요약 서비스** | **📅 ${currentDate}**
-`;
-
-    return markdown;
   }
 }

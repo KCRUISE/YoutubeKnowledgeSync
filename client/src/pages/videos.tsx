@@ -887,7 +887,7 @@ export default function Videos() {
             <AlertDialogDescription>
               선택한 {selectedVideos.size}개의 영상을 삭제하시겠습니까?
               <br />
-              요약이 있는 영상의 경우 요약도 함께 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
+              생성된 요약은 삭제되지 않고 보존됩니다. 이 작업은 되돌릴 수 없습니다.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -156,16 +156,7 @@ export class MemStorage implements IStorage {
     const existed = this.videos.has(id);
     if (existed) {
       this.videos.delete(id);
-      // Also delete any related summaries
-      const summariesToDelete: number[] = [];
-      this.summaries.forEach((summary, summaryId) => {
-        if (summary.videoId === id) {
-          summariesToDelete.push(summaryId);
-        }
-      });
-      summariesToDelete.forEach(summaryId => {
-        this.summaries.delete(summaryId);
-      });
+      // 영상만 삭제하고 요약은 보존 (요약은 독립적으로 유지)
     }
     return existed;
   }
@@ -358,10 +349,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteVideo(id: number): Promise<boolean> {
     try {
-      // First delete any related summaries
-      await db.delete(summaries).where(eq(summaries.videoId, id));
-      
-      // Then delete the video
+      // 영상만 삭제하고 요약은 보존
       const result = await db.delete(videos).where(eq(videos.id, id));
       return (result.rowCount ?? 0) > 0;
     } catch (error) {

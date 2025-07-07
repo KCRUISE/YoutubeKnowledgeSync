@@ -104,6 +104,9 @@ Three main entities with clear relationships:
   - Added proper API endpoint `/api/videos/:videoId/summary` for video summary generation
   - Enhanced bulk summary creation with better error handling and progress monitoring
   - Improved progress store synchronization for multiple simultaneous summary generation
+  - Modified video deletion to preserve summaries independently
+  - Updated deletion confirmation messages to reflect summary preservation
+  - Enhanced data integrity by keeping summaries when videos are removed
 - July 4, 2025. Enhanced video selection and bulk operations
   - Fixed video selection issues by allowing all videos to be selected regardless of summary status
   - Modified deletion functionality to allow deletion of all videos (with or without summaries)

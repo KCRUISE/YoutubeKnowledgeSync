@@ -8,9 +8,68 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
 import { Settings, Key, Globe, Zap, Bell, Download } from "lucide-react";
+import { useState } from "react";
 
 export default function SettingsPage() {
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
+  const [settings, setSettings] = useState({
+    summaryLanguage: "korean",
+    summaryLength: "medium",
+    autoSummarize: true,
+    newVideoNotify: true,
+    summaryCompleteNotify: true,
+    exportFormat: "obsidian",
+    includeMetadata: true,
+  });
+
+  const handleSettingChange = (key: string, value: any) => {
+    setSettings(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
+
+  const handleSaveSettings = async () => {
+    setIsLoading(true);
+    try {
+      // 설정 저장 로직 (향후 API 엔드포인트 추가)
+      await new Promise(resolve => setTimeout(resolve, 1000)); // 임시 지연
+      
+      toast({
+        title: "설정이 저장되었습니다",
+        description: "모든 설정이 성공적으로 저장되었습니다.",
+      });
+    } catch (error) {
+      toast({
+        title: "설정 저장 실패",
+        description: "설정을 저장하는 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResetSettings = () => {
+    setSettings({
+      summaryLanguage: "korean",
+      summaryLength: "medium",
+      autoSummarize: true,
+      newVideoNotify: true,
+      summaryCompleteNotify: true,
+      exportFormat: "obsidian",
+      includeMetadata: true,
+    });
+    
+    toast({
+      title: "설정이 초기화되었습니다",
+      description: "모든 설정이 기본값으로 복원되었습니다.",
+    });
+  };
+
   return (
     <div className="min-h-screen flex bg-slate-50 dark:bg-background">
       <Sidebar />
@@ -118,7 +177,7 @@ export default function SettingsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="summary-language">요약 언어</Label>
-                  <Select defaultValue="korean">
+                  <Select value={settings.summaryLanguage} onValueChange={(value) => handleSettingChange('summaryLanguage', value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="언어 선택" />
                     </SelectTrigger>
@@ -131,7 +190,7 @@ export default function SettingsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="summary-length">요약 길이</Label>
-                  <Select defaultValue="medium">
+                  <Select value={settings.summaryLength} onValueChange={(value) => handleSettingChange('summaryLength', value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="길이 선택" />
                     </SelectTrigger>
@@ -150,7 +209,11 @@ export default function SettingsPage() {
                     새 비디오가 감지되면 자동으로 요약을 생성합니다
                   </p>
                 </div>
-                <Switch id="auto-summarize" defaultChecked />
+                <Switch 
+                  id="auto-summarize" 
+                  checked={settings.autoSummarize} 
+                  onCheckedChange={(checked) => handleSettingChange('autoSummarize', checked)} 
+                />
               </div>
             </CardContent>
           </Card>
@@ -171,7 +234,11 @@ export default function SettingsPage() {
                     등록된 채널에 새 비디오가 업로드되면 알림을 받습니다
                   </p>
                 </div>
-                <Switch id="new-video-notify" defaultChecked />
+                <Switch 
+                  id="new-video-notify" 
+                  checked={settings.newVideoNotify} 
+                  onCheckedChange={(checked) => handleSettingChange('newVideoNotify', checked)} 
+                />
               </div>
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
@@ -180,7 +247,11 @@ export default function SettingsPage() {
                     비디오 요약이 완료되면 알림을 받습니다
                   </p>
                 </div>
-                <Switch id="summary-complete-notify" defaultChecked />
+                <Switch 
+                  id="summary-complete-notify" 
+                  checked={settings.summaryCompleteNotify} 
+                  onCheckedChange={(checked) => handleSettingChange('summaryCompleteNotify', checked)} 
+                />
               </div>
             </CardContent>
           </Card>
@@ -196,7 +267,7 @@ export default function SettingsPage() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="export-format">기본 내보내기 형식</Label>
-                <Select defaultValue="obsidian">
+                <Select value={settings.exportFormat} onValueChange={(value) => handleSettingChange('exportFormat', value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="형식 선택" />
                   </SelectTrigger>
@@ -214,18 +285,22 @@ export default function SettingsPage() {
                     내보낼 때 채널명, 발행일 등의 메타데이터를 포함합니다
                   </p>
                 </div>
-                <Switch id="include-metadata" defaultChecked />
+                <Switch 
+                  id="include-metadata" 
+                  checked={settings.includeMetadata} 
+                  onCheckedChange={(checked) => handleSettingChange('includeMetadata', checked)} 
+                />
               </div>
             </CardContent>
           </Card>
 
           {/* 저장 버튼 */}
           <div className="flex justify-end space-x-3">
-            <Button variant="outline">
+            <Button variant="outline" onClick={handleResetSettings}>
               기본값으로 재설정
             </Button>
-            <Button>
-              설정 저장
+            <Button onClick={handleSaveSettings} disabled={isLoading}>
+              {isLoading ? "저장 중..." : "설정 저장"}
             </Button>
           </div>
         </div>

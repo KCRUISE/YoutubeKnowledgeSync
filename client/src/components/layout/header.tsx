@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Search } from "lucide-react";
 import { useState } from "react";
+import { ProgressMonitor } from "@/components/progress-monitor";
 
 interface HeaderProps {
   title: string;
@@ -39,6 +40,9 @@ export function Header({ title, subtitle, onAddChannel, onSearch }: HeaderProps)
               />
             </div>
           )}
+          
+          <ProgressMonitor />
+          
           {onAddChannel && (
             <Button onClick={onAddChannel}>
               <Plus className="w-4 h-4 mr-2" />

@@ -82,6 +82,15 @@ Three main entities with clear relationships:
 - Environment variables managed through Replit secrets
 
 ## Changelog
+- July 7, 2025. Added progress monitoring and enhanced settings management
+  - Implemented real-time progress monitoring modal with activity tracking and status updates
+  - Added comprehensive settings management with state persistence and validation
+  - Enhanced header with progress monitor button showing active task counts
+  - Fixed settings save functionality with proper form state management and user feedback
+  - Added progress statistics display (pending/processing, completed, failed tasks)
+  - Implemented settings reset functionality with confirmation messages
+  - Added loading states and error handling for settings operations
+  - Enhanced UI with Progress component for visual feedback on long-running operations
 - July 4, 2025. Enhanced video selection and bulk operations
   - Fixed video selection issues by allowing all videos to be selected regardless of summary status
   - Modified deletion functionality to allow deletion of all videos (with or without summaries)

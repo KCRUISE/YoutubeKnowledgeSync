@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { ProgressMonitor } from "@/components/progress-monitor";
 
@@ -9,9 +9,10 @@ interface HeaderProps {
   subtitle: string;
   onAddChannel?: () => void;
   onSearch?: (query: string) => void;
+  onRefresh?: () => void;
 }
 
-export function Header({ title, subtitle, onAddChannel, onSearch }: HeaderProps) {
+export function Header({ title, subtitle, onAddChannel, onSearch, onRefresh }: HeaderProps) {
   const [searchQuery, setSearchQuery] = useState("");
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -42,6 +43,13 @@ export function Header({ title, subtitle, onAddChannel, onSearch }: HeaderProps)
           )}
           
           <ProgressMonitor />
+          
+          {onRefresh && (
+            <Button variant="outline" size="sm" onClick={onRefresh}>
+              <RefreshCw className="w-4 h-4 mr-2" />
+              새로고침
+            </Button>
+          )}
           
           {onAddChannel && (
             <Button onClick={onAddChannel}>

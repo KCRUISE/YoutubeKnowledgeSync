@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { FileText, Eye, Download, Clock, ExternalLink, Trash2, X, Search, Grid, List, LayoutGrid, SortAsc, SortDesc, ChevronLeft, ChevronRight, Calendar, Tag } from "lucide-react";
+import { FileText, Eye, Download, Clock, ExternalLink, Trash2, X, Search, Grid, List, LayoutGrid, SortAsc, SortDesc, ChevronLeft, ChevronRight, Calendar, Tag, RefreshCw } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Sidebar } from "@/components/layout/sidebar";
@@ -52,13 +52,29 @@ export default function Summaries() {
     };
   }, []);
 
-  const { data: channels = [] } = useQuery<ChannelWithStats[]>({
+  const { data: channels = [], refetch: refetchChannels } = useQuery<ChannelWithStats[]>({
     queryKey: ["/api/channels"],
   });
 
-  const { data: summaries = [], isLoading } = useQuery<SummaryWithDetails[]>({
+  const { data: summaries = [], isLoading, refetch: refetchSummaries } = useQuery<SummaryWithDetails[]>({
     queryKey: ["/api/summaries"],
+    refetchInterval: 30000, // 30초마다 자동 갱신
   });
+
+  // 검색 핸들러
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    setCurrentPage(1); // 검색 시 첫 페이지로 이동
+  };
+
+  // 새로고침 핸들러
+  const handleRefresh = async () => {
+    await Promise.all([refetchSummaries(), refetchChannels()]);
+    toast({
+      title: "새로고침 완료",
+      description: "최신 요약 목록을 불러왔습니다.",
+    });
+  };
 
   // 태그와 인사이트 분리 수집
   const allTags = Array.from(new Set(
@@ -306,6 +322,8 @@ export default function Summaries() {
           <Header 
             title="요약 목록" 
             subtitle="AI가 생성한 YouTube 영상 요약을 관리하세요"
+            onSearch={handleSearch}
+            onRefresh={handleRefresh}
           />
           <div className="p-6 space-y-4">
             {[...Array(3)].map((_, i) => (
@@ -329,21 +347,23 @@ export default function Summaries() {
         <Header 
           title="요약 목록" 
           subtitle={`총 ${filteredSummaries.length}개의 요약`}
+          onSearch={handleSearch}
+          onRefresh={handleRefresh}
         />
         
         <div className="flex-1 p-6 space-y-6">
           {/* 검색 및 필터 */}
           <div className="space-y-4 p-4 bg-card rounded-lg border">
             <div className="flex flex-wrap items-center gap-3">
-              <div className="flex-1 min-w-64 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                <Input
-                  placeholder="제목, 내용, 채널명으로 검색..."
-                  value={searchQuery}
-                  onChange={(e) => handleSearchChange(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+              <Button 
+                size="sm" 
+                onClick={handleRefresh}
+                variant="outline"
+                className="whitespace-nowrap"
+              >
+                <RefreshCw className="w-4 h-4 mr-1" />
+                새로고침
+              </Button>
               
               <Button 
                 size="sm" 

@@ -4,8 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Activity, CheckCircle, Clock, AlertCircle } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { Activity, CheckCircle, Clock, AlertCircle, X, Trash2 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface ProgressItem {
   id: number;
@@ -20,40 +22,58 @@ interface ProgressItem {
 
 export function ProgressMonitor() {
   const [open, setOpen] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  // 실제 진행 상태 데이터를 가져오는 쿼리 (향후 구현)
-  const { data: progressData, isLoading } = useQuery({
+  // 실제 진행 상태 데이터를 가져오는 쿼리
+  const { data: progressData = [], isLoading } = useQuery({
     queryKey: ['/api/progress'],
     enabled: open,
     refetchInterval: 2000, // 2초마다 갱신
   });
 
-  // 임시 데이터 - 실제로는 서버에서 가져온 데이터 사용
-  const mockProgressData: ProgressItem[] = [
-    {
-      id: 1,
-      videoTitle: "React 18의 새로운 기능들",
-      channelName: "코드팩토리",
-      status: 'processing',
-      progress: 65,
-      startTime: new Date(Date.now() - 30000).toISOString(),
+  // 요약 취소 뮤테이션
+  const cancelMutation = useMutation({
+    mutationFn: (progressId: string) => apiRequest("POST", `/api/progress/${progressId}/cancel`),
+    onSuccess: (_, progressId) => {
+      toast({
+        title: "요약 생성이 취소되었습니다",
+        description: "진행중인 요약 생성을 성공적으로 취소했습니다.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/progress'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/summaries'] });
     },
-    {
-      id: 2,
-      videoTitle: "TypeScript 고급 패턴",
-      channelName: "개발자 채널",
-      status: 'completed',
-      progress: 100,
-      startTime: new Date(Date.now() - 60000).toISOString(),
-      endTime: new Date(Date.now() - 10000).toISOString(),
+    onError: (error) => {
+      toast({
+        title: "취소 실패",
+        description: "요약 생성 취소에 실패했습니다.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // 진행 항목 삭제 뮤테이션
+  const deleteMutation = useMutation({
+    mutationFn: (progressId: string) => apiRequest("DELETE", `/api/progress/${progressId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/progress'] });
     },
-    {
-      id: 3,
-      videoTitle: "Next.js 14 마이그레이션",
-      channelName: "웹 개발자",
-      status: 'pending',
-    },
-  ];
+    onError: (error) => {
+      toast({
+        title: "삭제 실패",
+        description: "진행 항목 삭제에 실패했습니다.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handleCancel = (progressId: string) => {
+    cancelMutation.mutate(progressId);
+  };
+
+  const handleDelete = (progressId: string) => {
+    deleteMutation.mutate(progressId);
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -65,6 +85,8 @@ export function ProgressMonitor() {
         return <CheckCircle className="w-4 h-4 text-green-500" />;
       case 'failed':
         return <AlertCircle className="w-4 h-4 text-red-500" />;
+      case 'cancelled':
+        return <X className="w-4 h-4 text-orange-500" />;
       default:
         return null;
     }
@@ -80,6 +102,8 @@ export function ProgressMonitor() {
         return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">완료</Badge>;
       case 'failed':
         return <Badge variant="destructive">실패</Badge>;
+      case 'cancelled':
+        return <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-100">취소됨</Badge>;
       default:
         return null;
     }
@@ -89,9 +113,10 @@ export function ProgressMonitor() {
     return new Date(timeString).toLocaleTimeString();
   };
 
-  const activeTasks = mockProgressData.filter(item => item.status === 'processing' || item.status === 'pending');
-  const completedTasks = mockProgressData.filter(item => item.status === 'completed');
-  const failedTasks = mockProgressData.filter(item => item.status === 'failed');
+  const activeTasks = progressData.filter(item => item.status === 'processing' || item.status === 'pending');
+  const completedTasks = progressData.filter(item => item.status === 'completed');
+  const failedTasks = progressData.filter(item => item.status === 'failed');
+  const cancelledTasks = progressData.filter(item => item.status === 'cancelled');
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -116,7 +141,7 @@ export function ProgressMonitor() {
         
         <div className="space-y-6">
           {/* 요약 통계 */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-4 gap-4">
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm text-muted-foreground">진행중/대기중</CardTitle>
@@ -131,6 +156,14 @@ export function ProgressMonitor() {
               </CardHeader>
               <CardContent className="pt-0">
                 <div className="text-2xl font-bold text-green-600">{completedTasks.length}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm text-muted-foreground">취소</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="text-2xl font-bold text-orange-600">{cancelledTasks.length}</div>
               </CardContent>
             </Card>
             <Card>
@@ -174,6 +207,17 @@ export function ProgressMonitor() {
                         </div>
                         <div className="flex items-center space-x-2">
                           {getStatusBadge(item.status)}
+                          {(item.status === 'processing' || item.status === 'pending') && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleCancel(item.id)}
+                              disabled={cancelMutation.isPending}
+                            >
+                              <X className="w-3 h-3 mr-1" />
+                              취소
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </CardContent>
@@ -206,6 +250,14 @@ export function ProgressMonitor() {
                         </div>
                         <div className="flex items-center space-x-2">
                           {getStatusBadge(item.status)}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleDelete(item.id)}
+                            disabled={deleteMutation.isPending}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
                         </div>
                       </div>
                     </CardContent>
@@ -239,6 +291,14 @@ export function ProgressMonitor() {
                           <Button size="sm" variant="outline">
                             재시도
                           </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleDelete(item.id)}
+                            disabled={deleteMutation.isPending}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
                         </div>
                       </div>
                     </CardContent>
@@ -248,7 +308,7 @@ export function ProgressMonitor() {
             </div>
           )}
 
-          {mockProgressData.length === 0 && (
+          {progressData.length === 0 && (
             <div className="text-center py-8">
               <Activity className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
               <p className="text-muted-foreground">현재 진행중인 작업이 없습니다.</p>

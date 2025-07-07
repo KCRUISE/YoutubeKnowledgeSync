@@ -13,6 +13,22 @@ const openaiService = new OpenAIService();
 // Obsidian MCP 서비스 초기화
 let obsidianMCP: ObsidianMCPService | null = null;
 
+// 진행 상태 추적을 위한 메모리 저장소
+interface ProgressItem {
+  id: string;
+  videoId: number;
+  videoTitle: string;
+  channelName: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
+  progress?: number;
+  startTime?: string;
+  endTime?: string;
+  error?: string;
+  controller?: AbortController;
+}
+
+const progressStore = new Map<string, ProgressItem>();
+
 async function initializeObsidianMCP() {
   const apiKey = process.env.OBSIDIAN_API_KEY;
   const host = process.env.OBSIDIAN_HOST || '127.0.0.1';
@@ -230,6 +246,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/summaries/:videoId", async (req, res) => {
+    const progressId = `summary_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
     try {
       const videoId = parseInt(req.params.videoId);
       const video = await storage.getVideo(videoId);
@@ -250,32 +268,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "이미 요약이 존재합니다." });
       }
 
-      // Get video transcript (not implemented yet)
-      const transcript = await youtubeService.getVideoTranscript(video.videoId);
-
-      // Generate summary using OpenAI
-      const aiSummary = await openaiService.summarizeVideo(
-        video.title,
-        video.description || "",
-        transcript || undefined
-      );
-
-      const summaryData = {
+      // 진행 상태 초기화
+      const controller = new AbortController();
+      const progressItem: ProgressItem = {
+        id: progressId,
         videoId: video.id,
-        channelId: video.channelId,
-        title: aiSummary.title,
-        content: aiSummary.content,
-        coreTheme: aiSummary.coreTheme,
-        keyPoints: aiSummary.keyPoints,
-        insights: aiSummary.insights,
-        tags: aiSummary.tags,
-        sections: JSON.stringify(aiSummary.sections), // Store as JSON string
+        videoTitle: video.title,
+        channelName: channel.name,
+        status: 'processing',
+        progress: 0,
+        startTime: new Date().toISOString(),
+        controller
       };
+      progressStore.set(progressId, progressItem);
 
-      const summary = await storage.createSummary(summaryData);
-      res.status(201).json(summary);
+      // 즉시 응답하여 클라이언트가 차단되지 않도록 함
+      res.status(202).json({ message: "요약 생성이 시작되었습니다.", progressId });
+
+      // 백그라운드에서 요약 생성 실행
+      (async () => {
+        try {
+          // 진행률 업데이트 - 트랜스크립트 가져오기
+          progressItem.progress = 25;
+          progressStore.set(progressId, { ...progressItem });
+
+          const transcript = await youtubeService.getVideoTranscript(video.videoId);
+          
+          if (controller.signal.aborted) {
+            progressItem.status = 'cancelled';
+            progressItem.endTime = new Date().toISOString();
+            progressStore.set(progressId, { ...progressItem });
+            return;
+          }
+
+          // 진행률 업데이트 - AI 요약 생성
+          progressItem.progress = 50;
+          progressStore.set(progressId, { ...progressItem });
+
+          const aiSummary = await openaiService.summarizeVideo(
+            video.title,
+            video.description || "",
+            transcript || undefined
+          );
+
+          if (controller.signal.aborted) {
+            progressItem.status = 'cancelled';
+            progressItem.endTime = new Date().toISOString();
+            progressStore.set(progressId, { ...progressItem });
+            return;
+          }
+
+          // 진행률 업데이트 - 데이터베이스 저장
+          progressItem.progress = 80;
+          progressStore.set(progressId, { ...progressItem });
+
+          const summaryData = {
+            videoId: video.id,
+            channelId: video.channelId,
+            title: aiSummary.title,
+            content: aiSummary.content,
+            coreTheme: aiSummary.coreTheme,
+            keyPoints: aiSummary.keyPoints,
+            insights: aiSummary.insights,
+            tags: aiSummary.tags,
+            sections: JSON.stringify(aiSummary.sections),
+          };
+
+          const summary = await storage.createSummary(summaryData);
+
+          // 완료 상태 업데이트
+          progressItem.status = 'completed';
+          progressItem.progress = 100;
+          progressItem.endTime = new Date().toISOString();
+          progressStore.set(progressId, { ...progressItem });
+
+        } catch (error) {
+          console.error("요약 생성 실패:", error);
+          progressItem.status = 'failed';
+          progressItem.error = error instanceof Error ? error.message : "요약 생성 실패";
+          progressItem.endTime = new Date().toISOString();
+          progressStore.set(progressId, { ...progressItem });
+        }
+      })();
+
     } catch (error) {
-      console.error("요약 생성 실패:", error);
+      console.error("요약 생성 시작 실패:", error);
+      
+      // 진행 상태 실패로 업데이트
+      const progressItem = progressStore.get(progressId);
+      if (progressItem) {
+        progressItem.status = 'failed';
+        progressItem.error = error instanceof Error ? error.message : "요약 생성 시작 실패";
+        progressItem.endTime = new Date().toISOString();
+        progressStore.set(progressId, progressItem);
+      }
+      
       res.status(500).json({ message: error instanceof Error ? error.message : "요약을 생성하는 데 실패했습니다." });
     }
   });
@@ -294,6 +381,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("요약 삭제 실패:", error);
       res.status(500).json({ message: "요약 삭제에 실패했습니다." });
+    }
+  });
+
+  // Progress monitoring routes
+  app.get("/api/progress", async (req, res) => {
+    try {
+      const progressItems = Array.from(progressStore.values()).map(item => ({
+        id: item.id,
+        videoId: item.videoId,
+        videoTitle: item.videoTitle,
+        channelName: item.channelName,
+        status: item.status,
+        progress: item.progress,
+        startTime: item.startTime,
+        endTime: item.endTime,
+        error: item.error,
+      }));
+      
+      res.json(progressItems);
+    } catch (error) {
+      console.error("진행 상태 조회 실패:", error);
+      res.status(500).json({ message: "진행 상태를 가져오는 데 실패했습니다." });
+    }
+  });
+
+  app.post("/api/progress/:progressId/cancel", async (req, res) => {
+    try {
+      const progressId = req.params.progressId;
+      const progressItem = progressStore.get(progressId);
+      
+      if (!progressItem) {
+        return res.status(404).json({ message: "진행 항목을 찾을 수 없습니다." });
+      }
+      
+      if (progressItem.status !== 'processing' && progressItem.status !== 'pending') {
+        return res.status(400).json({ message: "취소할 수 없는 상태입니다." });
+      }
+      
+      // AbortController를 사용하여 진행중인 작업 취소
+      if (progressItem.controller) {
+        progressItem.controller.abort();
+      }
+      
+      // 상태 업데이트
+      progressItem.status = 'cancelled';
+      progressItem.endTime = new Date().toISOString();
+      progressStore.set(progressId, progressItem);
+      
+      res.json({ message: "요약 생성이 취소되었습니다." });
+    } catch (error) {
+      console.error("요약 취소 실패:", error);
+      res.status(500).json({ message: "요약 취소에 실패했습니다." });
+    }
+  });
+
+  app.delete("/api/progress/:progressId", async (req, res) => {
+    try {
+      const progressId = req.params.progressId;
+      const success = progressStore.delete(progressId);
+      
+      if (!success) {
+        return res.status(404).json({ message: "진행 항목을 찾을 수 없습니다." });
+      }
+      
+      res.json({ message: "진행 항목이 삭제되었습니다." });
+    } catch (error) {
+      console.error("진행 항목 삭제 실패:", error);
+      res.status(500).json({ message: "진행 항목 삭제에 실패했습니다." });
     }
   });
 

@@ -121,8 +121,16 @@ export default function Videos() {
     
     try {
       await apiRequest("POST", `/api/summaries/${videoId}`);
+      
+      // 백그라운드에서 처리되므로 즉시 완료 메시지를 표시하지 않음
+      toast({
+        title: "요약 생성 시작",
+        description: "요약 생성이 시작되었습니다. 진행 상태에서 확인할 수 있습니다.",
+      });
+      
+      // 진행 상태와 요약 목록 갱신
+      queryClient.invalidateQueries({ queryKey: ['/api/progress'] });
       queryClient.invalidateQueries({ queryKey: ["/api/summaries"] });
-      toast({ title: "요약이 성공적으로 생성되었습니다." });
     } catch (error) {
       toast({
         title: "요약 생성 실패",

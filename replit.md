@@ -87,10 +87,15 @@ Three main entities with clear relationships:
   - Added comprehensive settings management with state persistence and validation
   - Enhanced header with progress monitor button showing active task counts
   - Fixed settings save functionality with proper form state management and user feedback
-  - Added progress statistics display (pending/processing, completed, failed tasks)
+  - Added progress statistics display (pending/processing, completed, failed, cancelled tasks)
   - Implemented settings reset functionality with confirmation messages
   - Added loading states and error handling for settings operations
   - Enhanced UI with Progress component for visual feedback on long-running operations
+  - Fixed summary creation to run in background with proper progress tracking
+  - Added cancel functionality for ongoing summary generation with AbortController
+  - Implemented delete functionality for completed and failed progress items
+  - Enhanced summary generation to appear in summary list after completion
+  - Modified summary creation to use asynchronous processing preventing UI blocking
 - July 4, 2025. Enhanced video selection and bulk operations
   - Fixed video selection issues by allowing all videos to be selected regardless of summary status
   - Modified deletion functionality to allow deletion of all videos (with or without summaries)

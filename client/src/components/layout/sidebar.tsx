@@ -1,5 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
+import { queryClient } from "@/lib/queryClient";
 import { 
   Home, 
   Tv, 
@@ -21,6 +22,13 @@ const navigation = [
 
 export function Sidebar() {
   const [location] = useLocation();
+
+  const handleMenuClick = (href: string) => {
+    // 요약 목록 메뉴 클릭 시 캐시 무효화하여 새로 조회
+    if (href === "/summaries") {
+      queryClient.invalidateQueries({ queryKey: ["/api/summaries"] });
+    }
+  };
 
   return (
     <aside className="w-64 bg-sidebar-background border-r border-sidebar-border flex flex-col">
@@ -50,6 +58,7 @@ export function Sidebar() {
                       "nav-item cursor-pointer",
                       isActive ? "nav-item-active" : "nav-item-inactive"
                     )}
+                    onClick={() => handleMenuClick(item.href)}
                   >
                     <item.icon className="w-4 h-4" />
                     <span>{item.name}</span>

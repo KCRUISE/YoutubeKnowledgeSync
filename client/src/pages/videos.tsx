@@ -36,7 +36,7 @@ import {
   AlertCircle,
   X,
   Calendar,
-  Star,
+  Badge as BadgeIcon,
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -529,7 +529,9 @@ export default function Videos() {
                                 <div className="flex-1 min-w-0">
                                   <h3 className="font-medium text-lg mb-2 line-clamp-2 flex items-center gap-2">
                                     {isNewToday(video.createdAt) && (
-                                      <Star className="w-4 h-4 text-yellow-500 flex-shrink-0" />
+                                      <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100 text-xs px-2 py-1 h-5 flex-shrink-0">
+                                        NEW
+                                      </Badge>
                                     )}
                                     {video.title}
                                   </h3>
@@ -598,7 +600,9 @@ export default function Videos() {
                             <div className="flex-1 min-w-0">
                               <h3 className="font-medium mb-2 line-clamp-2 flex items-center gap-2">
                                 {isNewToday(video.createdAt) && (
-                                  <Star className="w-4 h-4 text-yellow-500 flex-shrink-0" />
+                                  <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100 text-xs px-2 py-1 h-5 flex-shrink-0">
+                                    NEW
+                                  </Badge>
                                 )}
                                 {video.title}
                               </h3>
@@ -654,7 +658,9 @@ export default function Videos() {
                             <div className="flex-1 min-w-0">
                               <h3 className="font-medium text-xl mb-3 flex items-center gap-2">
                                 {isNewToday(video.createdAt) && (
-                                  <Star className="w-5 h-5 text-yellow-500 flex-shrink-0" />
+                                  <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100 text-xs px-2 py-1 h-5 flex-shrink-0">
+                                    NEW
+                                  </Badge>
                                 )}
                                 {video.title}
                               </h3>

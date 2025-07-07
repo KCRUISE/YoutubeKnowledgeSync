@@ -82,11 +82,12 @@ Three main entities with clear relationships:
 - Environment variables managed through Replit secrets
 
 ## Changelog
-- July 4, 2025. Added "New" icon display for videos fetched on the current day
+- July 4, 2025. Added "New" badge display for videos fetched on the current day
+  - Added createdAt field to videos table schema for tracking when videos were fetched
   - Added isNewToday() function to check if a video was fetched today
-  - Enhanced video list display with yellow star icons for new videos
-  - Updated all view modes (list, grid, detailed) to show the "New" indicator
-  - Improved visual distinction between new and existing content
+  - Enhanced video list display with blue "NEW" badge for new videos
+  - Updated all view modes (list, grid, detailed) to show the "NEW" badge
+  - Improved visual distinction between new and existing content with professional badge styling
 - July 4, 2025. Enhanced video deletion with summary restriction
   - Modified video deletion to only allow deletion of videos with generated summaries
   - Added visual indicators (disabled checkboxes) for videos without summaries

@@ -548,28 +548,26 @@ export default function Videos() {
                 </Button>
               )}
             </div>
-            {selectedVideos.size > 0 && (
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={handleBulkSummary}
-                  disabled={Array.from(selectedVideos).every(videoId => hasSummary(videoId))}
-                >
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  요약 생성 ({Array.from(selectedVideos).filter(videoId => !hasSummary(videoId)).length})
-                </Button>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => setShowDeleteDialog(true)}
-                  disabled={Array.from(selectedVideos).filter(videoId => hasSummary(videoId)).length === 0}
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  삭제 ({Array.from(selectedVideos).filter(videoId => hasSummary(videoId)).length})
-                </Button>
-              </div>
-            )}
+            <div className="flex items-center gap-2">
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleBulkSummary}
+                disabled={selectedVideos.size === 0 || Array.from(selectedVideos).every(videoId => hasSummary(videoId))}
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                요약 생성 ({selectedVideos.size > 0 ? Array.from(selectedVideos).filter(videoId => !hasSummary(videoId)).length : 0})
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setShowDeleteDialog(true)}
+                disabled={selectedVideos.size === 0 || Array.from(selectedVideos).filter(videoId => hasSummary(videoId)).length === 0}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                삭제 ({selectedVideos.size > 0 ? Array.from(selectedVideos).filter(videoId => hasSummary(videoId)).length : 0})
+              </Button>
+            </div>
           </div>
 
           {/* 영상 목록 */}

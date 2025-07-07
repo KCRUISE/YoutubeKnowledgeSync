@@ -449,6 +449,23 @@ export default function Videos() {
               </SelectContent>
             </Select>
 
+            {/* 표시 갯수 선택 */}
+            <Select value={itemsPerPage.toString()} onValueChange={(value) => {
+              setItemsPerPage(Number(value));
+              setCurrentPage(1); // 페이지를 첫 페이지로 리셋
+            }}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="6">6개씩</SelectItem>
+                <SelectItem value="12">12개씩</SelectItem>
+                <SelectItem value="24">24개씩</SelectItem>
+                <SelectItem value="48">48개씩</SelectItem>
+                <SelectItem value="100">100개씩</SelectItem>
+              </SelectContent>
+            </Select>
+
             {/* 정렬 옵션 */}
             <div className="flex items-center gap-2">
               <Button
@@ -546,7 +563,7 @@ export default function Videos() {
                   variant="destructive"
                   size="sm"
                   onClick={() => setShowDeleteDialog(true)}
-                  disabled={Array.from(selectedVideos).every(videoId => !hasSummary(videoId))}
+                  disabled={Array.from(selectedVideos).filter(videoId => hasSummary(videoId)).length === 0}
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
                   삭제 ({Array.from(selectedVideos).filter(videoId => hasSummary(videoId)).length})

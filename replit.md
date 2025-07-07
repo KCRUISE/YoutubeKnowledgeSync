@@ -84,10 +84,12 @@ Three main entities with clear relationships:
 ## Changelog
 - July 4, 2025. Enhanced video selection and bulk operations
   - Fixed video selection issues by allowing all videos to be selected regardless of summary status
+  - Fixed delete button activation logic to work properly when videos with summaries are selected
   - Added bulk summary generation feature for selected videos without summaries
   - Enhanced management bar with separate buttons for summary generation and deletion
+  - Added customizable items per page display (6, 12, 24, 48, 100 options)
   - Updated selection logic to show accurate counts for each operation type
-  - Improved user experience with clear feedback for bulk operations
+  - Improved user experience with clear feedback for bulk operations and pagination controls
 - July 4, 2025. Added "New" badge display for videos fetched on the current day
   - Added createdAt field to videos table schema for tracking when videos were fetched
   - Added isNewToday() function to check if a video was fetched today

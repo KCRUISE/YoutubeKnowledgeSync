@@ -388,12 +388,17 @@ export class DatabaseStorage implements IStorage {
         videoPublishedAt: videos.publishedAt,
       })
       .from(summaries)
-      .innerJoin(videos, eq(summaries.videoId, videos.id))
-      .innerJoin(channels, eq(videos.channelId, channels.id))
+      .leftJoin(videos, eq(summaries.videoId, videos.id))
+      .innerJoin(channels, eq(summaries.channelId, channels.id))
       .orderBy(desc(summaries.createdAt));
 
     return result.map(row => ({
       ...row,
+      videoTitle: row.videoTitle || "삭제된 영상",
+      videoUrl: row.videoUrl || "#",
+      videoDuration: row.videoDuration || null,
+      videoViewCount: row.videoViewCount || null,
+      videoPublishedAt: row.videoPublishedAt || new Date(),
       parsedSections: row.sections ? JSON.parse(row.sections as string) : undefined
     })) as SummaryWithDetails[];
   }
@@ -420,13 +425,18 @@ export class DatabaseStorage implements IStorage {
         videoPublishedAt: videos.publishedAt,
       })
       .from(summaries)
-      .innerJoin(videos, eq(summaries.videoId, videos.id))
-      .innerJoin(channels, eq(videos.channelId, channels.id))
+      .leftJoin(videos, eq(summaries.videoId, videos.id))
+      .innerJoin(channels, eq(summaries.channelId, channels.id))
       .where(eq(channels.id, channelId))
       .orderBy(desc(summaries.createdAt));
 
     return result.map(row => ({
       ...row,
+      videoTitle: row.videoTitle || "삭제된 영상",
+      videoUrl: row.videoUrl || "#",
+      videoDuration: row.videoDuration || null,
+      videoViewCount: row.videoViewCount || null,
+      videoPublishedAt: row.videoPublishedAt || new Date(),
       parsedSections: row.sections ? JSON.parse(row.sections as string) : undefined
     })) as SummaryWithDetails[];
   }
@@ -471,13 +481,18 @@ export class DatabaseStorage implements IStorage {
         videoPublishedAt: videos.publishedAt,
       })
       .from(summaries)
-      .innerJoin(videos, eq(summaries.videoId, videos.id))
-      .innerJoin(channels, eq(videos.channelId, channels.id))
+      .leftJoin(videos, eq(summaries.videoId, videos.id))
+      .innerJoin(channels, eq(summaries.channelId, channels.id))
       .orderBy(desc(summaries.createdAt))
       .limit(limit);
 
     return result.map(row => ({
       ...row,
+      videoTitle: row.videoTitle || "삭제된 영상",
+      videoUrl: row.videoUrl || "#",
+      videoDuration: row.videoDuration || null,
+      videoViewCount: row.videoViewCount || null,
+      videoPublishedAt: row.videoPublishedAt || new Date(),
       parsedSections: row.sections ? JSON.parse(row.sections as string) : undefined
     })) as SummaryWithDetails[];
   }
@@ -504,8 +519,8 @@ export class DatabaseStorage implements IStorage {
         videoPublishedAt: videos.publishedAt,
       })
       .from(summaries)
-      .innerJoin(videos, eq(summaries.videoId, videos.id))
-      .innerJoin(channels, eq(videos.channelId, channels.id))
+      .leftJoin(videos, eq(summaries.videoId, videos.id))
+      .innerJoin(channels, eq(summaries.channelId, channels.id))
       .where(
         or(
           like(summaries.title, `%${query}%`),
@@ -518,6 +533,11 @@ export class DatabaseStorage implements IStorage {
 
     return result.map(row => ({
       ...row,
+      videoTitle: row.videoTitle || "삭제된 영상",
+      videoUrl: row.videoUrl || "#",
+      videoDuration: row.videoDuration || null,
+      videoViewCount: row.videoViewCount || null,
+      videoPublishedAt: row.videoPublishedAt || new Date(),
       parsedSections: row.sections ? JSON.parse(row.sections as string) : undefined
     })) as SummaryWithDetails[];
   }

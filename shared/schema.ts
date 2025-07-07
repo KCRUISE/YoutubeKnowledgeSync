@@ -29,7 +29,7 @@ export const videos = pgTable("videos", {
 
 export const summaries = pgTable("summaries", {
   id: serial("id").primaryKey(),
-  videoId: integer("video_id").notNull().references(() => videos.id),
+  videoId: integer("video_id").references(() => videos.id, { onDelete: "set null" }),
   channelId: integer("channel_id").notNull().references(() => channels.id),
   title: text("title").notNull(),
   content: text("content").notNull(),

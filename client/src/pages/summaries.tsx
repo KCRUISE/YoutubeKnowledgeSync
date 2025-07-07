@@ -372,15 +372,7 @@ export default function Summaries() {
           {/* 검색 및 필터 */}
           <div className="space-y-4 p-4 bg-card rounded-lg border">
             <div className="flex flex-wrap items-center gap-3">
-              <Button 
-                size="sm" 
-                onClick={handleRefresh}
-                variant="outline"
-                className="whitespace-nowrap"
-              >
-                <RefreshCw className="w-4 h-4 mr-1" />
-                새로고침
-              </Button>
+
               
               <Button 
                 size="sm" 

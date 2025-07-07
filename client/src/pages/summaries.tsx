@@ -58,7 +58,6 @@ export default function Summaries() {
 
   const { data: summaries = [], isLoading, refetch: refetchSummaries } = useQuery<SummaryWithDetails[]>({
     queryKey: ["/api/summaries"],
-    refetchInterval: 30000, // 30초마다 자동 갱신
   });
 
   // 검색 핸들러

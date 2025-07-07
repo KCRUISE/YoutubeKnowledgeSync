@@ -98,7 +98,6 @@ Three main entities with clear relationships:
   - Modified summary creation to use asynchronous processing preventing UI blocking
   - Enhanced summary list search functionality with real-time header search
   - Added refresh button to summary list for manual data updates
-  - Implemented automatic data refresh every 30 seconds for summary list
   - Removed redundant search input from summary page filter section
   - Improved user experience with centralized search and refresh controls
 - July 4, 2025. Enhanced video selection and bulk operations

@@ -36,6 +36,7 @@ import {
   AlertCircle,
   X,
   Calendar,
+  Star,
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -172,6 +173,16 @@ export default function Videos() {
 
   const hasSummary = (videoId: number) => {
     return (summaries as any[]).some((s: any) => s.videoId === videoId);
+  };
+
+  const isNewToday = (createdAt: Date) => {
+    const today = new Date();
+    const videoDate = new Date(createdAt);
+    return (
+      videoDate.getFullYear() === today.getFullYear() &&
+      videoDate.getMonth() === today.getMonth() &&
+      videoDate.getDate() === today.getDate()
+    );
   };
 
   // 다중 선택 관련 함수들 (요약이 있는 영상만 선택 가능)
@@ -516,7 +527,10 @@ export default function Videos() {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-start justify-between">
                                 <div className="flex-1 min-w-0">
-                                  <h3 className="font-medium text-lg mb-2 line-clamp-2">
+                                  <h3 className="font-medium text-lg mb-2 line-clamp-2 flex items-center gap-2">
+                                    {isNewToday(video.createdAt) && (
+                                      <Star className="w-4 h-4 text-yellow-500 flex-shrink-0" />
+                                    )}
                                     {video.title}
                                   </h3>
                                   <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
@@ -582,7 +596,10 @@ export default function Videos() {
                               className={!hasSummary(video.id) ? "opacity-50 cursor-not-allowed" : ""}
                             />
                             <div className="flex-1 min-w-0">
-                              <h3 className="font-medium mb-2 line-clamp-2">
+                              <h3 className="font-medium mb-2 line-clamp-2 flex items-center gap-2">
+                                {isNewToday(video.createdAt) && (
+                                  <Star className="w-4 h-4 text-yellow-500 flex-shrink-0" />
+                                )}
                                 {video.title}
                               </h3>
                               <div className="text-sm text-muted-foreground mb-2">
@@ -635,7 +652,10 @@ export default function Videos() {
                               className={!hasSummary(video.id) ? "opacity-50 cursor-not-allowed" : ""}
                             />
                             <div className="flex-1 min-w-0">
-                              <h3 className="font-medium text-xl mb-3">
+                              <h3 className="font-medium text-xl mb-3 flex items-center gap-2">
+                                {isNewToday(video.createdAt) && (
+                                  <Star className="w-5 h-5 text-yellow-500 flex-shrink-0" />
+                                )}
                                 {video.title}
                               </h3>
                               {video.description && (

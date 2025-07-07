@@ -151,4 +151,16 @@
   .dark .badge-outline {
     @apply bg-gray-800 text-gray-300 border-gray-700;
   }
+  
+  .nav-item {
+    @apply flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors w-full;
+  }
+  
+  .nav-item-active {
+    @apply bg-primary text-primary-foreground;
+  }
+  
+  .nav-item-inactive {
+    @apply text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground;
+  }
 }

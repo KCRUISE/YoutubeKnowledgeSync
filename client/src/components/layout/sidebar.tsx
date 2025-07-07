@@ -1,6 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, getQueryFn } from "@/lib/queryClient";
+import { useQuery } from "@tanstack/react-query";
 import { 
   Home, 
   Tv, 
@@ -12,16 +13,30 @@ import {
   PlayCircle
 } from "lucide-react";
 
-const navigation = [
+const getNavigation = (stats: any, videoCount: number) => [
   { name: "대시보드", href: "/", icon: Home },
-  { name: "채널 관리", href: "/channels", icon: Tv },
-  { name: "영상 목록", href: "/videos", icon: PlayCircle },
-  { name: "요약 목록", href: "/summaries", icon: FileText },
+  { name: "채널 관리", href: "/channels", icon: Tv, count: stats?.totalChannels },
+  { name: "영상 목록", href: "/videos", icon: PlayCircle, count: videoCount },
+  { name: "요약 목록", href: "/summaries", icon: FileText, count: stats?.totalSummaries },
   { name: "설정", href: "/settings", icon: Settings },
 ];
 
 export function Sidebar() {
   const [location] = useLocation();
+
+  // 통계 데이터 조회
+  const { data: stats } = useQuery({
+    queryKey: ["/api/stats"],
+    queryFn: getQueryFn({ on401: "returnNull" }),
+    staleTime: 30000, // 30초 동안 캐시 유지
+  });
+
+  // 영상 목록 조회
+  const { data: videos } = useQuery({
+    queryKey: ["/api/videos"],
+    queryFn: getQueryFn({ on401: "returnNull" }),
+    staleTime: 30000,
+  });
 
   const handleMenuClick = (href: string) => {
     // 요약 목록 메뉴 클릭 시 캐시 무효화하여 새로 조회
@@ -48,7 +63,7 @@ export function Sidebar() {
       {/* Navigation */}
       <nav className="flex-1 p-4">
         <ul className="space-y-2">
-          {navigation.map((item) => {
+          {getNavigation(stats, videos?.length || 0).map((item) => {
             const isActive = location === item.href;
             return (
               <li key={item.name}>
@@ -61,7 +76,12 @@ export function Sidebar() {
                     onClick={() => handleMenuClick(item.href)}
                   >
                     <item.icon className="w-4 h-4" />
-                    <span>{item.name}</span>
+                    <span className="flex-1">{item.name}</span>
+                    {item.count !== undefined && (
+                      <span className="ml-auto text-xs bg-muted text-muted-foreground px-2 py-1 rounded-full">
+                        {item.count}
+                      </span>
+                    )}
                   </div>
                 </Link>
               </li>

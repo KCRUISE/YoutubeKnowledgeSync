@@ -573,12 +573,21 @@ export default function Videos() {
                 {viewMode === "list" && (
                   <div className="space-y-4">
                     {currentVideos.map((video: Video) => (
-                      <Card key={video.id} className="hover:shadow-md transition-shadow">
+                      <Card 
+                        key={video.id} 
+                        className={`hover:shadow-md transition-all cursor-pointer ${
+                          selectedVideos.has(video.id) 
+                            ? 'ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-950' 
+                            : ''
+                        }`}
+                        onClick={() => toggleVideoSelection(video.id)}
+                      >
                         <CardContent className="p-4">
                           <div className="flex items-start gap-4">
                             <Checkbox
                               checked={selectedVideos.has(video.id)}
                               onCheckedChange={() => toggleVideoSelection(video.id)}
+                              onClick={(e) => e.stopPropagation()}
                             />
                             <div className="flex-1 min-w-0">
                               <div className="flex items-start justify-between">
@@ -624,7 +633,10 @@ export default function Videos() {
                                   {!hasSummary(video.id) && (
                                     <Button
                                       size="sm"
-                                      onClick={() => createSummary(video.id)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        createSummary(video.id);
+                                      }}
                                       disabled={generatingVideos.has(video.id)}
                                     >
                                       <Sparkles className="w-4 h-4 mr-2" />
@@ -644,12 +656,21 @@ export default function Videos() {
                 {viewMode === "grid" && (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {currentVideos.map((video: Video) => (
-                      <Card key={video.id} className="hover:shadow-md transition-shadow">
+                      <Card 
+                        key={video.id} 
+                        className={`hover:shadow-md transition-all cursor-pointer ${
+                          selectedVideos.has(video.id) 
+                            ? 'ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-950' 
+                            : ''
+                        }`}
+                        onClick={() => toggleVideoSelection(video.id)}
+                      >
                         <CardContent className="p-4">
                           <div className="flex items-start gap-2 mb-3">
                             <Checkbox
                               checked={selectedVideos.has(video.id)}
                               onCheckedChange={() => toggleVideoSelection(video.id)}
+                              onClick={(e) => e.stopPropagation()}
                             />
                             <div className="flex-1 min-w-0">
                               <h3 className="font-medium mb-2 line-clamp-2 flex items-center gap-2">
@@ -681,7 +702,10 @@ export default function Videos() {
                               ) : (
                                 <Button
                                   size="sm"
-                                  onClick={() => createSummary(video.id)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    createSummary(video.id);
+                                  }}
                                   disabled={generatingVideos.has(video.id)}
                                   className="w-full"
                                 >
@@ -700,12 +724,21 @@ export default function Videos() {
                 {viewMode === "detailed" && (
                   <div className="space-y-6">
                     {currentVideos.map((video: Video) => (
-                      <Card key={video.id} className="hover:shadow-md transition-shadow">
+                      <Card 
+                        key={video.id} 
+                        className={`hover:shadow-md transition-all cursor-pointer ${
+                          selectedVideos.has(video.id) 
+                            ? 'ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-950' 
+                            : ''
+                        }`}
+                        onClick={() => toggleVideoSelection(video.id)}
+                      >
                         <CardContent className="p-6">
                           <div className="flex items-start gap-4">
                             <Checkbox
                               checked={selectedVideos.has(video.id)}
                               onCheckedChange={() => toggleVideoSelection(video.id)}
+                              onClick={(e) => e.stopPropagation()}
                             />
                             <div className="flex-1 min-w-0">
                               <h3 className="font-medium text-xl mb-3 flex items-center gap-2">
@@ -751,7 +784,10 @@ export default function Videos() {
                                   </Badge>
                                 ) : (
                                   <Button
-                                    onClick={() => createSummary(video.id)}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      createSummary(video.id);
+                                    }}
                                     disabled={generatingVideos.has(video.id)}
                                   >
                                     <Sparkles className="w-4 h-4 mr-2" />

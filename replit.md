@@ -86,11 +86,13 @@ Three main entities with clear relationships:
   - Fixed video selection issues by allowing all videos to be selected regardless of summary status
   - Modified deletion functionality to allow deletion of all videos (with or without summaries)
   - Fixed delete button activation logic to work when any videos are selected
+  - Added clickable video card areas for easy selection with visual feedback (blue ring and background)
   - Added bulk summary generation feature for selected videos without summaries
   - Enhanced management bar with separate buttons for summary generation and deletion
   - Added customizable items per page display (6, 12, 24, 48, 100 options)
   - Updated deletion confirmation dialog to clarify that summaries are deleted with videos when applicable
   - Improved user experience with clear feedback for bulk operations and pagination controls
+  - Added event propagation handling to prevent conflicts between card clicks and button clicks
 - July 4, 2025. Added "New" badge display for videos fetched on the current day
   - Added createdAt field to videos table schema for tracking when videos were fetched
   - Added isNewToday() function to check if a video was fetched today

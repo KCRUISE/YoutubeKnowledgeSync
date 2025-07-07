@@ -29,7 +29,7 @@ export function ProgressMonitor() {
   const { data: progressData = [], isLoading } = useQuery({
     queryKey: ['/api/progress'],
     enabled: open,
-    refetchInterval: 2000, // 2초마다 갱신
+    refetchInterval: 3000, // 3초마다 갱신
   });
 
   // 요약 취소 뮤테이션

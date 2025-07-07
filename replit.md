@@ -124,6 +124,8 @@ Three main entities with clear relationships:
   - Added automatic cache invalidation when clicking summary list menu for fresh data retrieval
   - Added count badges to sidebar menu items showing number of channels, videos, and summaries
   - Enhanced sidebar navigation with real-time statistics display
+  - Updated progress monitoring to refresh every 3 seconds instead of 2 seconds
+  - Added automatic summary list refresh when summaries are completed while viewing the page
 - July 4, 2025. Enhanced video selection and bulk operations
   - Fixed video selection issues by allowing all videos to be selected regardless of summary status
   - Modified deletion functionality to allow deletion of all videos (with or without summaries)

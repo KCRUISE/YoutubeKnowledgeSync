@@ -60,6 +60,23 @@ export default function Summaries() {
     queryKey: ["/api/summaries"],
   });
 
+  // 진행 상태 모니터링 - 요약 완료 시 자동 업데이트
+  const { data: progressData = [] } = useQuery({
+    queryKey: ['/api/progress'],
+    refetchInterval: 3000, // 3초마다 갱신
+  });
+
+  // 진행 상태 변화 감지하여 요약 목록 업데이트
+  useEffect(() => {
+    if (progressData.length > 0) {
+      const completedItems = progressData.filter((item: any) => item.status === 'completed');
+      if (completedItems.length > 0) {
+        // 완료된 항목이 있으면 요약 목록 새로고침
+        queryClient.invalidateQueries({ queryKey: ["/api/summaries"] });
+      }
+    }
+  }, [progressData, queryClient]);
+
   // 검색 핸들러
   const handleSearch = (query: string) => {
     setSearchQuery(query);
